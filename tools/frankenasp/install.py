@@ -246,9 +246,18 @@ def install(target, payload, *, nonce):
     # Tar in memory-bounded streaming mode; the source tree remains private.
     try:
         tarpath = payload.parent / "device-payload.tar"
+        # The host account may have a different numeric UID than root on
+        # the Echo. Force private payload ownership to root on extraction.
+        def root_owned(info):
+            if not (info.isfile() or info.isdir()):
+                raise ValueError("refusing non-regular file in staged runtime tar")
+            info.uid, info.gid = 0, 0
+            info.uname, info.gname = "root", "root"
+            return info
         with tarfile.open(tarpath, "w") as tf:
             for name in ("amazon-arm32", "frankenasp-trial"):
-                tf.add(payload / name, arcname=name, recursive=True)
+                tf.add(payload / name, arcname=name, recursive=True,
+                       filter=root_owned)
         with tarpath.open("rb") as fd:
             proc = subprocess.run(
                 ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
