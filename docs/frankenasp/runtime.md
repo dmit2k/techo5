@@ -24,10 +24,19 @@ for verifying Android linker namespaces, symbol versions and ABI.
 Vendor, VNDK and Bionic components must correspond to the factory build.
 The output contains licensed proprietary material and is gitignored.
 
-**Not yet a device installation procedure:** the old prototype used
-an on-device `sh-native` ELF interpreter adaptation and relied on
-FireOS vendor paths. Mounting/namespace layout, native linking, service
-supervision and safe A/B fallback are yet to be made reproducible.
+**Device staging is now documented separately** in
+[automatic and manual setup](installation.md). The new `install.py`
+requires an explicit `--backup-partitions DIR` containing the owner's
+original `p21-system.img`, validates the known Athena firmware and
+preserved read-only `/vendor`, extracts **only** the factory `system`
+dependencies and stages a private ARM32/Bionic runtime plus self-built
+experimental TECHO5 daemon under `/data`. It requires `--install` for
+any device write and refuses to replace an existing runtime/trial.
+It **does not enable native ASP, run a test or change the official daemon**.
+The installation flow has completed dry-run checks on the researched unit
+and full 47-file original image extraction, but has **not** been
+qualified as a clean full-device install on a second unit. A/B fallback
+and long-duration behavior still need separate trials.
 
 The opt-in marker records *intent*, not confirmed execution. The read-only
 `status.sh` checks native ASP and worker shared objects in process maps,
