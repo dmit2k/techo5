@@ -5,6 +5,8 @@ ROOT=/data/techo5-linux
 FLAG="$ROOT/fireos-asp.enabled"
 [ -e "$FLAG" ] && requested=yes || requested=no
 printf 'requested=%s\n' "$requested"
+[ -e /run/techo5/frankenasp-armed ] && armed=yes || armed=no
+printf 'tmpfs_armed=%s\n' "$armed"
 found=no
 for p in /proc/[0-9]*; do
     [ -r "$p/maps" ] || continue
@@ -17,5 +19,5 @@ for p in /proc/[0-9]*; do
     fi
 done
 printf 'native_asp_mapped=%s\n' "$found"
-[ "$requested" = yes ] && [ "$found" = yes ] && exit 0
+[ "$requested" = yes ] && [ "$armed" = yes ] && [ "$found" = yes ] && exit 0
 exit 1
