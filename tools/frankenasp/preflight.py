@@ -101,9 +101,9 @@ def original_system_image(image, files):
         raise ValueError("system image absent or empty")
     out = {}
     for f in files:
-        # debugfs image paths start at /, not /system.
+        # Athena original p21 ext4 contains a /system directory at its root.
         proc = subprocess.run(
-            ["debugfs", "-R", "stat /" + f, str(image)],
+            ["debugfs", "-R", "stat /system/" + f, str(image)],
             capture_output=True, text=True, timeout=15, check=False,
         )
         out[f] = "Inode:" in proc.stdout and "Size:" in proc.stdout
