@@ -116,6 +116,10 @@ class SetupTests(unittest.TestCase):
                 result = install.install("root@example", payload, nonce="abcd1234")
             self.assertFalse(result["activated"])
             self.assertFalse(result["official_daemon_modified"])
+            import tarfile
+            with tarfile.open(payload.parent / "device-payload.tar") as arc:
+                for member in arc.getmembers():
+                    self.assertEqual((member.uid, member.gid), (0, 0))
             self.assertTrue(any("sha256sum -c" in command for command in calls))
             self.assertTrue(any("test ! -e" in command for command in calls))
             self.assertFalse(any("mount --bind" in command or "techo5-experimental start" in command
