@@ -69,7 +69,7 @@ class PreflightTests(unittest.TestCase):
             image.write_bytes(b"test image mock")
             def fake_run(argv, **_kw):
                 return mock.Mock(stdout="Inode: 8   Type: regular    Size: 1\n"
-                                        if argv[2] == "stat /lib/libc.so" else "File not found")
+                                        if argv[2] == "stat /system/lib/libc.so" else "File not found")
             with mock.patch.object(pf.subprocess, "run", side_effect=fake_run):
                 result = pf.original_system_image(image, ("lib/libc.so", "bin/linker"))
             self.assertTrue(result["lib/libc.so"])
