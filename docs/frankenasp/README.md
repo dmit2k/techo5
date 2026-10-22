@@ -26,20 +26,41 @@ device backups, keep them outside Git and review applicable licenses.
 - `tools/frankenasp/status.sh`: distinguish requested marker from loaded ASP.
 - `tools/frankenasp/tests`: synthetic PCM and fixed-point tests.
 
+## Device and firmware scope
+
+The **37** factory DSP configuration/model files observed under
+`/vendor/etc/audio-algorithms/` are from **this Athena device's original
+Fire OS**. Their ASR, VoIP, playback, Bluetooth and other settings are
+**modes of the Athena hardware**, not factory profiles for every Echo.
+Original `AFE.cfg` and `asp.cfg` identify the target board as `Athena`,
+with four microphones and two speakers. Neither the Athena `libasp.so`
+nor its beamformer coefficient bundle has been validated on any other Echo.
+A reusable **multi-device Franken ASP framework** remains a possible
+future design, but each board/firmware needs its own validated DSP/runtime,
+calibration and synchronized-reference adapter.
+
+See [multi-device compatibility and portability scope](multi-device-scope.md).
+
 ## Documentation
 
 - [Architecture and open questions](architecture.md)
+- [Multi-device scope: why 37 factory files are *not* universal Echo profiles](multi-device-scope.md)
+- [Exact Athena factory paths, ELF dependencies and surviving partitions](partition-dependencies-20261023.md)
 - [Local runtime assembly and limitations](runtime.md)
 - [Controlled comparison protocol](testing.md)
 
 ## Safety and milestones
 
-The prior prototype processed 1250/1250 native 8-ms blocks. The port of its
-Go speech path to current TECHO5 source has passed initial local tests.
-**This is not yet a qualified on-device release.** An installation mechanism,
-Bionic runtime activation, IPC supervision, atomic rollback and device
-long-duration testing remain outstanding. Creating the
-`/data/techo5-linux/fireos-asp.enabled` marker without this work is unsafe.
+The research prototype has now completed limited live **Athena-only**
+trials with time-limited rollback, controlled worker termination and a real
+SIGSTOP-induced native IPC timeout. Detailed observations are in the
+[trial reports](ipc-hang-trial-20261023.md).
+**This is not a qualified release.** Long-duration ALSA/AFE stability,
+acoustic wake-word and AEC performance, cross-firmware compatibility and
+per-device installation remain unvalidated. Do not use the persistent
+`/data/techo5-linux/fireos-asp.enabled` marker alone: the guarded trial
+also requires the explicitly temporary `/run/techo5/frankenasp-armed`
+flag and an independent watchdog.
 
 No experiments should overwrite the official TECHO5 binary or modify
 factory partitions. Keep the official release and its recovery method.
