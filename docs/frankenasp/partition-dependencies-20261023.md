@@ -115,6 +115,15 @@ The actual TECHO5 `tools/install-athena.py` does **automatically create host-sid
 
 ## `/vendor/etc/audio-algorithms/` — 37 factory files (preserved p12)
 
+**Scope warning:** this is the complete observed *Athena* vendor directory
+from one Fire OS PS75741.7080N build, **not** a cross-Echo model/firmware
+configuration pack. The original `AFE.cfg` and `asp.cfg` both identify
+`Hardware Definition.Name = "Athena"`, with **4 microphones and 2 speakers**.
+The multiple ASR/VoIP/playback/BT/etc. presets are modes of that hardware;
+its beamformer coefficients must not be assumed valid for Crown, Cronos,
+Checkers, Rook, Biscuit or Radar. See
+[multi-device portability research](multi-device-scope.md).
+
 `libasp.so` references the factory audio-algorithm directory and `asp.cfg` / `AFE.cfg`. `AFE.cfg` mentions 28 filenames from this directory. Those textual references are **not** proof that all files are opened in the active ASR processing path.
 
 - `/vendor/etc/audio-algorithms/AFE.cfg`
