@@ -65,6 +65,8 @@ itself grant permission to redistribute third-party materials.
   read-only extraction from operator-selected factory partition backups.
 - `tools/frankenasp/build_worker.sh`: optional Android NDK source build.
 - `tools/frankenasp/status.sh`: distinguish requested marker from loaded ASP.
+- `tools/frankenasp/audit_capture.py`: read-only, no-audio-playback integrity audit of previously saved 4-mic/2-AWB PCM (detects silent reference).
+- `tools/frankenasp/preflight.py`: read-only inventory of preserved factory vendor, private Android runtime and optional original system backup (no extraction or install).
 - `tools/frankenasp/tests`: synthetic PCM and fixed-point tests.
 
 ## Device and firmware scope
@@ -89,6 +91,7 @@ See [multi-device compatibility and portability scope](multi-device-scope.md).
 - [Exact Athena factory paths, ELF dependencies and surviving partitions](partition-dependencies-20261023.md)
 - [Local runtime assembly and limitations](runtime.md)
 - [Controlled comparison protocol](testing.md)
+- [Stage 3 preparation: input integrity, zero-AWB finding, factory preflight and acoustic test metadata](stage3-preparation-20261023.md)
 
 ## Safety and milestones
 
