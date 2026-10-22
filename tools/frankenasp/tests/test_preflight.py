@@ -27,13 +27,13 @@ class PreflightTests(unittest.TestCase):
                 full.write_bytes(b"synthetic content")
             vals = pf.local_files(root, pf.REQUIRED_SYSTEM, "system")
             self.assertTrue(all(vals.values()))
-            summary = pf.evaluate(dict.fromkeys(pf.VENDOR_FILES, True), runtime=vals)
+            summary = pf.evaluate(dict.fromkeys(pf.VENDOR_FILES, True), runtime=vals, sha=pf.TESTED_ASP_SHA256)
             self.assertEqual(summary["next_action"], "static_files_present_review_abi_and_trial_guards")
 
     def test_vendor_present_with_original_backup(self):
         vendor = dict.fromkeys(pf.VENDOR_FILES, True)
         backup = dict.fromkeys(pf.REQUIRED_SYSTEM, True)
-        summary = pf.evaluate(vendor, system_backup=backup)
+        summary = pf.evaluate(vendor, system_backup=backup, sha=pf.TESTED_ASP_SHA256)
         self.assertEqual(summary["next_action"], "extract_matching_arm32_system_to_owner_private_runtime")
         self.assertEqual(summary["system_backup_missing"], [])
 
@@ -44,8 +44,15 @@ class PreflightTests(unittest.TestCase):
         self.assertEqual(result["next_action"], "factory_revision_unvalidated_do_not_enable")
         self.assertFalse(result["tested_factory_libasp_sha256_match"])
 
+    def test_unreadable_factory_identity_is_not_qualified(self):
+        vendor = dict.fromkeys(pf.VENDOR_FILES, True)
+        complete = dict.fromkeys(pf.REQUIRED_SYSTEM, True)
+        result = pf.evaluate(vendor, runtime=complete, sha=None)
+        self.assertEqual(result["next_action"], "factory_revision_unvalidated_do_not_enable")
+        self.assertIsNone(result["tested_factory_libasp_sha256_match"])
+
     def test_unavailable_original_system(self):
-        summary = pf.evaluate(dict.fromkeys(pf.VENDOR_FILES, True))
+        summary = pf.evaluate(dict.fromkeys(pf.VENDOR_FILES, True), sha=pf.TESTED_ASP_SHA256)
         self.assertEqual(summary["next_action"], "find_first_install_fireos_p21_system_backup")
         self.assertFalse(summary["system_backup_checked"])
 
