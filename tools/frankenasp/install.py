@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare and optionally stage owner-supplied Athena factory voice DSP.
 
-Default mode is READ-ONLY --check. Requires explicit --install for writes.
+Default mode is READ-ONLY verification. Requires --install for writes.
 Reads p21-system.img ONLY in --backup-partitions (no recursive discovery).
 Uses the owner's intact, read-only /vendor on the Echo. Never flashes
 partitions, replaces the running TECHO5 binary or activates factory mode.
