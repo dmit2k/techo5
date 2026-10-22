@@ -119,7 +119,7 @@ def evaluate(vendor, system_backup=None, runtime=None, sha=None):
     runtime_ok = runtime is not None and not missing_runtime
     if not vendor_ok:
         next_action = "investigate_vendor_partition_without_writing"
-    elif sha is not None and sha.lower() != TESTED_ASP_SHA256:
+    elif sha is None or sha.lower() != TESTED_ASP_SHA256:
         next_action = "factory_revision_unvalidated_do_not_enable"
     elif runtime_ok:
         next_action = "static_files_present_review_abi_and_trial_guards"
