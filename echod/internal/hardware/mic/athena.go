@@ -283,15 +283,42 @@ type pairedCapture struct {
 
 	// The software reference (athenaKernel.softRef): clock stamps the microphones' frames, got
 	// counts them since the stream started, and soft holds what Fill gave for the current read.
-	clock        echoref.Clock
-	got          uint64
-	softL, softR []float32
-	softOK       bool
+	clock         echoref.Clock
+	got           uint64
+	softL, softR  []float32
+	softOK        bool
+	factory       *factoryASP
+	factoryOutput []int16
 }
 
 func openAthena() (capture, error) {
-	k := athenaRunning()
-	athenaInit(k)
+	running := athenaRunning()
+	k := *running // per-open selection; the normal TECHO5 kernel map stays unchanged
+	fireos, err := factoryASPSelected()
+	if err != nil {
+		return nil, fmt.Errorf("factory ASP mode: %w", err)
+	}
+	if fireos {
+		if !k.softRef {
+			return nil, errors.New("factory ASP AWB mode requires athena mainline")
+		}
+		k.refDevice = 1 // kernel DL1_AWB_Record, S16 stereo, 96k
+		k.softRef = false
+		slog.Info("athena: FireOS ASP mode selected", "mic", "hw:0,2", "reference", "hw:0,1")
+	}
+	athenaInit(&k)
+	if fireos {
+		m, err := alsa.OpenMixer(Card)
+		if err != nil {
+			return nil, fmt.Errorf("factory AWB mixer: %w", err)
+		}
+		ok1 := athenaWrite(m, "UL2_CH1 DL1_CH1", 1)
+		ok2 := athenaWrite(m, "UL2_CH2 DL1_CH2", 1)
+		_ = m.Close()
+		if !ok1 || !ok2 {
+			return nil, errors.New("hardware AWB routes unavailable; refusing synthetic reference")
+		}
+	}
 
 	var ref *alsa.Capture
 	if k.refDevice >= 0 {
@@ -307,6 +334,9 @@ func openAthena() (capture, error) {
 		if err != nil {
 			slog.Warn("athena: no playback reference, echo cancellation will have nothing to cancel",
 				"device", k.refDevice, "err", err)
+			if fireos {
+				return nil, fmt.Errorf("factory ASP requires real hardware AWB: %w", err)
+			}
 			ref = nil
 		}
 	}
@@ -327,9 +357,15 @@ func openAthena() (capture, error) {
 	}
 
 	c := newPairedCapture(mics, ref)
+	c.k = &k
 	if err := c.start(); err != nil {
 		_ = c.Close()
 		return nil, err
+	}
+	c.factory, err = openFactoryASP()
+	if err != nil {
+		_ = c.Close()
+		return nil, fmt.Errorf("factory ASP worker: %w", err)
 	}
 	// As Fire OS does once both streams run: the PMIC's microphone path, which is where the bias for
 	// the analog microphones is read to come from (athena_bias.go).
@@ -428,12 +464,34 @@ func (c *pairedCapture) Read(buf []byte) (int, error) {
 	} else if c.k.softRef {
 		c.softFill(frames)
 	}
-	c.convert(buf[:frames*frameBytes], c.micBuf[:micBytes], ref)
+	c.factoryOutput = nil
+	if c.factory == nil {
+		c.convert(buf[:frames*frameBytes], c.micBuf[:micBytes], ref)
+	} else {
+		// Do not execute the 6-channel 192-tap resamplers in addition to
+		// the factory ASP. Cheap decimation keeps diagnostics/side channels
+		// approximately populated, while the actual wake/ASR PCM comes
+		// exclusively from the original factory DSP worker.
+		c.factoryAux16(buf[:frames*frameBytes], c.micBuf[:micBytes], c.refBuf[:refBytes])
+	}
+	if c.factory != nil {
+		// Read one mic device only; the same raw input feeds TECHO5
+		// diagnostics and the factory DSP worker, no parallel ALSA capture.
+		out, err := c.factory.Process20ms(c.micBuf[:micBytes], c.refBuf[:refBytes], frames)
+		if err != nil {
+			return 0, fmt.Errorf("factory ASP processing: %w", err)
+		}
+		c.factoryOutput = out
+	}
 	c.got += uint64(frames)
 	c.meter.frames += frames
 	c.meter.report()
 	return frames * frameBytes, nil
 }
+
+// FactoryOutput is already mono PCM16 at 16 kHz, processed by the
+// original Amazon ASR pipeline. Nil means stock TECHO5 processing.
+func (c *pairedCapture) FactoryOutput() []int16 { return c.factoryOutput }
 
 // athenaMicDelay is the microphones' decimator delay: a frame out of it is the input from this far back.
 const athenaMicDelay = time.Duration((athenaMicTaps - 1) * int64(time.Second) / 2 / athenaMicRate)
@@ -530,6 +588,30 @@ func putRef(frame []byte, a, b float32, meter *[athenaRefChannels]float64) {
 	putS24(frame[3*(RefFirst+1):], b)
 }
 
+// factoryAux16 supplies the normal TECHO5 side-channel/diagnostic frame
+// without running its expensive 96k->16k FIR while native factory ASR is
+// doing all the speech processing. This 1-in-6 sampling is NOT fed to
+// wake-word detection, the conversation pipeline, or native ASP.
+func (c *pairedCapture) factoryAux16(out, mic96, awb96 []byte) {
+	const step = 6
+	frameBytes := Channels * Bits / 8
+	n := len(out) / frameBytes
+	for f := 0; f < n; f++ {
+		for ch := 0; ch < 4; ch++ {
+			i := (f*step*4 + ch) * 4
+			v := int32(binary.LittleEndian.Uint32(mic96[i:])) >> 8
+			o := f*frameBytes + ch*3
+			out[o], out[o+1], out[o+2] = byte(v), byte(v>>8), byte(v>>16)
+		}
+		for ch := 0; ch < 2; ch++ {
+			i := (f*step*2 + ch) * 2
+			v := int32(int16(binary.LittleEndian.Uint16(awb96[i:]))) << 8
+			o := f*frameBytes + (RefFirst+ch)*3
+			out[o], out[o+1], out[o+2] = byte(v), byte(v>>8), byte(v>>16)
+		}
+	}
+}
+
 // putS24 writes a sample in [-1, 1) as S24_3LE, held to full scale.
 func putS24(b []byte, v float32) {
 	s := int32(math.Round(float64(v) * (1 << 23)))
@@ -554,6 +636,10 @@ func readFull(pcm *alsa.Capture, buf []byte) error {
 
 // Close lets both devices go.
 func (c *pairedCapture) Close() error {
+	if c.factory != nil {
+		c.factory.Close()
+		c.factory = nil
+	}
 	if c.k.amazon {
 		athenaPmicMic(false)
 	}
