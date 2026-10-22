@@ -32,3 +32,37 @@ supervision and safe A/B fallback are yet to be made reproducible.
 The opt-in marker records *intent*, not confirmed execution. The read-only
 `status.sh` checks native ASP and worker shared objects in process maps,
 but it does not yet certify real-time processing health.
+
+
+## Time-limited guarded live trial (operator-only)
+
+The optional `tools/frankenasp/trial.sh` is intended for an **Athena owner's
+lab**, after the experimental AArch64 daemon and owner-local Bionic runtime
+have been independently reviewed. It does not persistently replace the official
+daemon or alter the A/B slot. It bind-mounts a separate executable only during
+a strictly time-limited session and uses a separate `nohup` watchdog to restore
+the original path at timeout or when the native worker disappears or its process identity changes.
+
+**Preconditions:** The normal TECHO5 binary must be running; the experimental
+binary must already be staged as
+`/data/techo5-linux/frankenasp-trial/techo5-experimental`;
+`/data/techo5-linux/amazon-arm32/` must contain the owner-local ARM32 worker,
+Bionic runtime and `sh-native`. There must be no other hold, bind mount or
+factory-mode marker.
+
+Commands on the **device**, after manual review:
+
+~~~sh
+sh /data/techo5-linux/frankenasp-trial/trial.sh status
+sh /data/techo5-linux/frankenasp-trial/trial.sh start 90
+sh /data/techo5-linux/frankenasp-trial/trial.sh rollback
+~~~
+
+The mode needs **both** persistent `fireos-asp.enabled` and temporary
+`/run/techo5/frankenasp-armed`. `/run` disappears on reboot: a power loss
+must not leave FrankenASP activated. Trial control does not change volume,
+the user's stereo preference, or cause test audio playback. Automatic
+time-out and unexpected worker disappearance call rollback; log in
+`/data/techo5-linux/frankenasp-trial/trial-events.log`. Inspect its status,
+the original daemon's health and playback/capture before extending any test.
+The trial is *not* a supported unattended permanent installation.
