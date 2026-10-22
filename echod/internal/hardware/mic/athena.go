@@ -307,6 +307,16 @@ func openAthena() (capture, error) {
 		slog.Info("athena: FireOS ASP mode selected", "mic", "hw:0,2", "reference", "hw:0,1")
 	}
 	athenaInit(&k)
+	// Once a hardware AWB route has been touched, undo it on every failed
+	// initialization, not only when the capture managed to start.
+	ready := false
+	if fireos {
+		defer func() {
+			if !ready {
+				athenaFactoryAWBOff()
+			}
+		}()
+	}
 	if fireos {
 		m, err := alsa.OpenMixer(Card)
 		if err != nil {
@@ -376,6 +386,7 @@ func openAthena() (capture, error) {
 	slog.Info("athena: capture open", "mics", fmt.Sprintf("hw:%d,%d", Card, k.micDevice),
 		"channels", k.micChannels, "reference", ref != nil, "ref_device", k.refDevice,
 		"software_reference", ref == nil && k.softRef)
+	ready = true
 	return c, nil
 }
 
@@ -634,6 +645,22 @@ func readFull(pcm *alsa.Capture, buf []byte) error {
 	return nil
 }
 
+// athenaFactoryAWBOff only affects the experimental AFE recording switches,
+// never the physical playback path, user volume or DSP settings.
+func athenaFactoryAWBOff() {
+	m, err := alsa.OpenMixer(Card)
+	if err != nil {
+		slog.Warn("factory AWB cleanup: mixer unavailable", "err", err)
+		return
+	}
+	defer m.Close()
+	for _, name := range []string{"UL2_CH1 DL1_CH1", "UL2_CH2 DL1_CH2"} {
+		if !athenaWrite(m, name, 0) {
+			slog.Warn("factory AWB cleanup: failed", "route", name)
+		}
+	}
+}
+
 // Close lets both devices go.
 func (c *pairedCapture) Close() error {
 	if c.factory != nil {
@@ -642,6 +669,9 @@ func (c *pairedCapture) Close() error {
 	}
 	if c.k.amazon {
 		athenaPmicMic(false)
+	}
+	if c.k.refDevice == 1 && !c.k.softRef && !c.k.amazon {
+		athenaFactoryAWBOff()
 	}
 	var err error
 	if c.ref != nil {
