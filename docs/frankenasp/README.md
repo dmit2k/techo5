@@ -1,37 +1,52 @@
-# Franken ASP — comparing factory Echo audio with open TECHO5
+# Franken ASP — comparing factory and TECHO5 microphone capture and speech processing
 
-## Purpose: an original-DSP reference for fair A/B comparisons
+## Purpose: a factory voice-input reference for objective and subjective A/B tests
 
-**The goal of Franken ASP is to let Echo owners objectively measure and
-subjectively hear the differences between Amazon's original factory audio
-processing and TECHO5's open audio-processing pipeline on the same hardware.**
-Anyone considering or using TECHO5 should ultimately be able to evaluate the
-trade-offs themselves, rather than relying on marketing claims, assumptions,
-or anecdotes about which pipeline performs better.
+**Franken ASP is a research project for comparing the quality of microphone
+capture and speech-signal processing on Amazon Echo hardware: Amazon's
+original factory voice front end versus TECHO5's open implementation.**
+Our goal is to let Echo owners measure and listen to the differences in
+what the voice assistant actually *hears*, using the same physical device
+and reproducible conditions. Users should be able to evaluate both
+approaches themselves instead of relying on assumptions or anecdotal claims.
 
-The project investigates a carefully controlled, opt-in way to run the
-device's *own* original factory audio processor as a **reference baseline**
-alongside the existing open implementation. Comparisons can include:
+**This is not a comparison of speaker sound quality, music playback,
+amplifier tuning, or how the Echo sounds when playing audio.** Music,
+TV and the Echo's own speaker output matter here only as acoustic
+interference and/or playback-reference signals for echo cancellation
+(AEC). The output under evaluation is the **captured and processed
+microphone signal sent toward wake-word detection and speech recognition**.
 
-- **Objective:** wake-word hits, misses and false activations under
-  reproducible speech/background conditions; residual echo/AEC behavior,
-  input clipping, signal levels, processing delay and recovery from faults.
-- **Subjective:** intelligibility, word onset preservation, suppression of
-  music/TV/background speech, and listening comparisons of recorded output.
+The project investigates a controlled, opt-in way to run the device's
+*own* original factory microphone/voice DSP as a **reference baseline**
+alongside TECHO5's existing open voice-capture and processing path.
+Comparisons can include:
 
-Fair trials must control microphone position, source material, playback
-volume, capture gain, test ordering and relevant DSP state. We intend to
-publish repeatable test methods and results, **not proprietary factory
-firmware or private voice recordings**. Evidence may reveal advantages,
-weaknesses or trade-offs in *either* pipeline; superiority is a question
-to test, not a predetermined conclusion. Findings should also inform
-improvements to TECHO5's fully open audio path.
+- **Objective voice-input measurements:** wake-word detection and false
+  activations; missed speech and clipped word onsets; residual playback
+  echo/AEC behavior, background-speech/noise suppression, input signal
+  levels and clipping, processing latency and recovery from faults.
+- **Subjective evaluation of captured speech:** blind listening to
+  recorded **microphone/processed-voice PCM**, focusing on speech
+  intelligibility, naturalness, onset preservation and suppression of
+  TV, music or other competing sounds. These recordings are not
+  evaluations of the Echo's loudspeakers.
 
-**Important limitation:** using the factory ASP library under Linux is
-not the same as booting all of Fire OS or reproducing every stock control
-path, timing relationship and acoustic state. A direct comparison against
-original Fire OS needs separate validation. The project does **not**
-currently provide one-click A/B switching for every TECHO5 user.
+Fair comparisons must control speaker/background level, microphone
+position, source material, input gain, test ordering and relevant DSP
+state. We intend to publish repeatable test methods and results,
+**not proprietary factory firmware or private voice recordings**.
+Either voice-processing pipeline may have strengths, weaknesses and
+trade-offs; which performs better is a question to measure, not a
+predetermined conclusion. Findings should help improve TECHO5's
+fully open **microphone and speech-processing path**.
+
+**Important limitation:** running Amazon's original ASP library under
+TECHO5 Linux does not recreate the complete Fire OS microphone pipeline,
+its control state or its capture/reference timing. Claims of equivalence
+to voice capture on stock Fire OS require separate validation. This
+project does **not** currently provide one-click A/B switching for every
+TECHO5 user.
 
 ## Current experimental implementation and status
 
@@ -40,9 +55,10 @@ The working proof of concept is limited to **Echo Show 8 Gen 2
 (Athena, MT8183)** on a specific tested factory firmware build. It
 routes four microphone channels and two physical playback-reference
 channels to a separate ARM32/Android Bionic process running the
-owner's original factory audio processor. The original TECHO5 audio
-path stays the default. The experiment does not replace upstream
-speaker stereo support or kernel patches.
+owner's original factory **speech-input** processor. TECHO5's open
+microphone/speech-processing pipeline stays the default. This experiment
+does not alter or benchmark the speaker playback path, amplifier tuning,
+upstream stereo support or kernel patches.
 
 **This repository distributes only independently authored source code,
 tests and documentation.** No Amazon binaries, partition images,
@@ -73,8 +89,11 @@ itself grant permission to redistribute third-party materials.
 
 The **37** factory DSP configuration/model files observed under
 `/vendor/etc/audio-algorithms/` are from **this Athena device's original
-Fire OS**. Their ASR, VoIP, playback, Bluetooth and other settings are
-**modes of the Athena hardware**, not factory profiles for every Echo.
+Fire OS**. The directory also contains ASR, VoIP, playback, Bluetooth
+and other settings — **modes of Athena hardware, not factory profiles
+for every Echo**. Their presence does not expand Franken ASP's scope:
+this research compares **microphone capture and voice processing only**,
+not the sound produced by the speaker.
 Original `AFE.cfg` and `asp.cfg` identify the target board as `Athena`,
 with four microphones and two speakers. Neither the Athena `libasp.so`
 nor its beamformer coefficient bundle has been validated on any other Echo.
@@ -106,7 +125,8 @@ per-device installation remain unvalidated. Do not use the persistent
 also requires the explicitly temporary `/run/techo5/frankenasp-armed`
 flag and an independent watchdog.
 
-No experiments should overwrite the official TECHO5 binary or modify
-factory partitions. Keep the official release and its recovery method.
+No experiments should overwrite the official TECHO5 binary, modify
+factory partitions or change speaker playback settings as part of
+microphone-quality comparisons. Keep the official release and its recovery method.
 All AEC, beamforming and wake-word quality claims remain provisional
 until measured with appropriately labeled recordings.
