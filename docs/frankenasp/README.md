@@ -1,16 +1,57 @@
-# Franken ASP — experimental Athena factory audio processor
+# Franken ASP — comparing factory Echo audio with open TECHO5
 
-**Status: research preview. Not an official TECHO5 feature or a ready-to-install build.**
+## Purpose: an original-DSP reference for fair A/B comparisons
 
-This branch experimentally routes four microphone channels and two channels of
-physical playback loopback on **Echo Show 8 Gen 2 (Athena, MT8183)** to a separate
-ARM32/Android Bionic process running an owner-supplied factory audio processor.
-It does not replace the upstream speaker stereo implementation or kernel patches.
+**The goal of Franken ASP is to let Echo owners objectively measure and
+subjectively hear the differences between Amazon's original factory audio
+processing and TECHO5's open audio-processing pipeline on the same hardware.**
+Anyone considering or using TECHO5 should ultimately be able to evaluate the
+trade-offs themselves, rather than relying on marketing claims, assumptions,
+or anecdotes about which pipeline performs better.
 
-**No original Amazon binaries, images, coefficients, native DSP configurations,
-voice recordings or complete factory runtimes are distributed here.**
-Participants must extract components from their own legitimately acquired
-device backups, keep them outside Git and review applicable licenses.
+The project investigates a carefully controlled, opt-in way to run the
+device's *own* original factory audio processor as a **reference baseline**
+alongside the existing open implementation. Comparisons can include:
+
+- **Objective:** wake-word hits, misses and false activations under
+  reproducible speech/background conditions; residual echo/AEC behavior,
+  input clipping, signal levels, processing delay and recovery from faults.
+- **Subjective:** intelligibility, word onset preservation, suppression of
+  music/TV/background speech, and listening comparisons of recorded output.
+
+Fair trials must control microphone position, source material, playback
+volume, capture gain, test ordering and relevant DSP state. We intend to
+publish repeatable test methods and results, **not proprietary factory
+firmware or private voice recordings**. Evidence may reveal advantages,
+weaknesses or trade-offs in *either* pipeline; superiority is a question
+to test, not a predetermined conclusion. Findings should also inform
+improvements to TECHO5's fully open audio path.
+
+**Important limitation:** using the factory ASP library under Linux is
+not the same as booting all of Fire OS or reproducing every stock control
+path, timing relationship and acoustic state. A direct comparison against
+original Fire OS needs separate validation. The project does **not**
+currently provide one-click A/B switching for every TECHO5 user.
+
+## Current experimental implementation and status
+
+**Research preview, not an official TECHO5 feature or a ready-to-install build.**
+The working proof of concept is limited to **Echo Show 8 Gen 2
+(Athena, MT8183)** on a specific tested factory firmware build. It
+routes four microphone channels and two physical playback-reference
+channels to a separate ARM32/Android Bionic process running the
+owner's original factory audio processor. The original TECHO5 audio
+path stays the default. The experiment does not replace upstream
+speaker stereo support or kernel patches.
+
+**This repository distributes only independently authored source code,
+tests and documentation.** No Amazon binaries, partition images,
+beamformer coefficients, native DSP configurations, original factory
+runtimes or voice recordings are included. Owners supply any required
+factory components from their own lawfully obtained device backups,
+keep them private and remain responsible for applicable license and
+copyright requirements. The research/benchmarking purpose does not
+itself grant permission to redistribute third-party materials.
 
 ## Contents
 
