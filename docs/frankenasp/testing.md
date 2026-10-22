@@ -24,4 +24,16 @@ AEC. Publish aggregates and only synthetic or explicitly consented
 recordings. Never share unredacted device logs, private audio, IDME,
 factory coefficients or original software images.
 
-No on-device trials until a tested official-binary recovery path exists.
+The guarded Athena proof-of-concept has passed short live startup,
+worker-failure and stalled-IPC recovery tests. No further live audio
+experiments or long-duration AFE stability test are planned in this phase.
+The reproducible offline A/B comparison is **deferred until after the
+scheduled acoustic capture session**, which will provide more labeled
+four-microphone and hardware-reference recordings.
+
+Follow the [Stage 3 preparation checklist](stage3-preparation-20261023.md)
+before declaring any recorded clip suitable for AEC comparisons: in
+particular, ALSA reference-frame delivery is not evidence of nonzero
+playback-reference samples. Keep the stock cutoff 0.75 and fixed 0.85
+as **separate documented conditions**, never an unlogged setting change.
+
