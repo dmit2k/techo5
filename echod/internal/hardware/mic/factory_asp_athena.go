@@ -23,6 +23,7 @@ import (
 
 const (
 	factoryModeFile     = "/data/techo5-linux/fireos-asp.enabled"
+	factoryArmedFile    = "/run/techo5/frankenasp-armed"
 	factoryRoot         = "/data/techo5-linux/amazon-arm32"
 	factoryInputFrames  = 768
 	factoryInputBytes   = factoryInputFrames * 6 * 4
@@ -46,6 +47,15 @@ func factoryASPSelected() (bool, error) {
 		return false, nil
 	}
 	_, err := os.Stat(factoryModeFile)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	// /run is tmpfs: power loss and reboots must revert to the stock DSP.
+	// A persistent marker alone is never sufficient to enable proprietary DSP.
+	_, err = os.Stat(factoryArmedFile)
 	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	}
@@ -128,6 +138,22 @@ func openFactoryASP() (*factoryASP, error) {
 		_ = cmd.Wait()
 		return nil, fmt.Errorf("factory ASP startup: %w", err)
 	}
+	// Go's process pipes must enforce deadlines. A wedged Bionic DSP must
+	// not keep the 20-ms microphone loop blocked indefinitely.
+	if _, ok := in.(interface{ SetWriteDeadline(time.Time) error }); !ok {
+		_ = in.Close()
+		_ = out.Close()
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		return nil, errors.New("factory ASP stdin does not support deadlines")
+	}
+	if _, ok := out.(interface{ SetReadDeadline(time.Time) error }); !ok {
+		_ = in.Close()
+		_ = out.Close()
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		return nil, errors.New("factory ASP stdout does not support deadlines")
+	}
 	f.cmd, f.stdin, f.stdout = cmd, in, out
 	slog.Info("factory Amazon ASP enabled", "worker", cmd.Process.Pid, "ref", "hardware hw:0,1 DL1_AWB_Record stereo S16LE 96k")
 	return f, nil
@@ -190,6 +216,13 @@ func (f *factoryASP) Process20ms(raw, reference []byte, outputFrames int) ([]int
 		f.pendingIn = append(f.pendingIn, packet[:]...)
 	}
 	for len(f.pendingIn) >= factoryInputBytes {
+		deadline := time.Now().Add(150 * time.Millisecond)
+		if err := f.stdin.(interface{ SetWriteDeadline(time.Time) error }).SetWriteDeadline(deadline); err != nil {
+			return nil, fmt.Errorf("ASP input deadline: %w", err)
+		}
+		if err := f.stdout.(interface{ SetReadDeadline(time.Time) error }).SetReadDeadline(deadline); err != nil {
+			return nil, fmt.Errorf("ASP output deadline: %w", err)
+		}
 		if _, err := f.stdin.Write(f.pendingIn[:factoryInputBytes]); err != nil {
 			return nil, fmt.Errorf("ASP input write: %w", err)
 		}
