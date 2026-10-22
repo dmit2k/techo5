@@ -289,6 +289,9 @@ tar -C "$STAGE/trial" -cf - techo5-experimental trial.sh SHA256SUMS |
 ssh "$ECHO" 'cd /data/techo5-linux/frankenasp-trial &&
              sha256sum -c SHA256SUMS >/dev/null && echo TRIAL_FILES_MATCH'
 
+# Explicit owner-only ownership for manually transferred tar files:
+ssh "$ECHO" 'chown -R root:root /data/techo5-linux/amazon-arm32 /data/techo5-linux/frankenasp-trial'
+
 # This must print INACTIVE. Do NOT create any marker:
 ssh "$ECHO" 'test ! -e /data/techo5-linux/fireos-asp.enabled &&
              test ! -e /run/techo5/frankenasp-armed && echo INACTIVE'
