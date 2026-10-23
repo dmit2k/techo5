@@ -84,6 +84,8 @@ itself grant permission to redistribute third-party materials.
 - `tools/frankenasp/audit_capture.py`: read-only, no-audio-playback integrity audit of previously saved 4-mic/2-AWB PCM (detects silent reference).
 - `tools/frankenasp/preflight.py`: read-only inventory of preserved factory vendor, private Android runtime and optional original system backup (no extraction or install).
 - `tools/frankenasp/install.py`: explicit `--backup-partitions DIR` (no discovery), read-only verification by default; optional guarded staging of owner's private ARM32 system runtime and self-built experimental binaries with `--install`, **without activation**.
+- `tools/frankenasp/build_experimental.sh`: explicit HA-rankable `vX.Y.Z_frankenasp.<commit>` local version rather than unstamped `v0.0.0-dev`.
+- `tools/frankenasp/persist.sh`, `persistent-run.sh`, `persist-watch.sh`: **disabled by default**, slot-local opt-in persistence and automatic stock fallback; patched updater refuses normal updates until opt-out and reboot.
 - `tools/frankenasp/tests`: synthetic PCM and fixed-point tests.
 
 ## Device and firmware scope
@@ -111,6 +113,7 @@ See [multi-device compatibility and portability scope](multi-device-scope.md).
 - [Exact Athena factory paths, ELF dependencies and surviving partitions](partition-dependencies-20261023.md)
 - [Local runtime assembly and limitations](runtime.md)
 - [Owner setup: guarded automatic installer and step-by-step manual instructions](installation.md)
+- [Optional reboot persistence, fail-safe fallback, and TECHO5 update interaction](installation.md#c-optional-persistence-across-ordinary-reboots-advanced-owners)
 - [Controlled comparison protocol](testing.md)
 - [Stage 3 preparation: input integrity, zero-AWB finding, factory preflight and acoustic test metadata](stage3-preparation-20261023.md)
 
