@@ -45,6 +45,25 @@ More results, including quiet/loud stimuli, limitations and study boundaries: [I
 
 **Hardware-provenance boundary:** the wake-word acoustic tests used an earlier owner-built experimental daemon on the same Athena. The newly built clean-commit artifacts have passed off-device build/static tests but **have not been deployed back to the Echo for another acoustic run**. This Dev Edition is a validated research code baseline, not a second completed field qualification of a byte-identical release binary.
 
+### Independent repeat CI on the release source snapshot (24 October 2026)
+
+A **second complete clean-source CI run** was performed on `independent build host` using source commit `f9c1e76d9e734f12de7d8c9b10c3eda803015831`, Go 1.26.0, `-count=1` and bounded Go package parallelism (`-p 3`). Its fresh results:
+
+| Check | Repeat result |
+| --- | --- |
+| Python staging/protocol unit tests (31) | **PASS** |
+| Go `./...` default / Show | **PASS** |
+| Go `./...` with `-tags dot` | **PASS** |
+| Go `./...` with `-tags spot` | **PASS** |
+| Go `./...` with `-tags panel` | **PASS** |
+| `GOOS=windows go vet ./cmd/techo5-deck` | **PASS** |
+| `GOOS=darwin go vet ./cmd/techo5-deck` | **PASS** |
+| AArch64 `build_experimental.sh` on clean checkout | **PASS** |
+
+The last repeat-run marker was `REPEAT_CI_ALL_PASS` at **2026-10-23 22:18:27 UTC** (24 October, Riga time). Test logs and the locally built executable remain on the independent build host under `private CI logs (not distributed)`.
+
+The only subsequent adjustments in the release snapshot are **documentation-only** (including clarification of a sandbox-specific `tar`/seccomp issue); no `echod` or `tools/frankenasp` source changes were made after the repeated CI. See [build-host and tar audit](build-on-ubuntu-26.04.md). The repeated off-device CI does not supersede the acoustic-trial provenance limitation stated above.
+
 ## Explicitly not qualified
 
 - Production or unattended long-duration stability; continuous ALSA/AFE and thermal resilience.
