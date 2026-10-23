@@ -32,8 +32,17 @@ func guardFrankenFlagsPresent() bool {
 	return false
 }
 
+// FrankenASPPersistenceActive also lets the optional overnight auto-update
+// loop skip the attempt entirely instead of raising a failure every night.
+func FrankenASPPersistenceActive() bool {
+	return slotSystem() && layout.Athena() && guardFrankenFlagsPresent()
+}
+
 func persistentFrankenUpdateGuard() error {
-	return guardFrankenUpdateForSlot(slotSystem(), layout.Athena())
+	if FrankenASPPersistenceActive() {
+		return errFrankenBlocksUpdate
+	}
+	return nil
 }
 
 func guardFrankenUpdateForSlot(hasSlots, isAthena bool) error {
