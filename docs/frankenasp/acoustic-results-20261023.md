@@ -1,14 +1,25 @@
 # Initial acoustic results — Echo Show 8 Gen 2 (Athena)
 
-**23 October 2026 · Research preview · Wake-word capture, not loudspeaker audio quality**
+**23 October 2026 · Research preview · Wake-word activations during music playback by the Echo itself**
 
 The FrankenASP proof of concept is now running on real Athena hardware, using the device's original Amazon speech-input ASP through a private ARM32/Bionic worker. Startup, continuous PCM output, wake-word input, and guarded recovery have been demonstrated. Controlled, repeated acoustic testing shows a substantial initial wake-word detection advantage over the stock TECHO5 voice frontend. This is a practical engineering comparison, **not** a long-duration reliability qualification or an academic characterization of individual DSP algorithms.
+
+## Scope of this first acoustic comparison
+
+**These measurements cover wake-word detection only, while the Echo Show 8 itself was playing background music through its built-in speakers.** They do **not** measure recognition or intelligibility of the spoken command *after* wake-word activation. In some scenarios, speech stimuli and interfering TV audio were also emitted by separate, spatially positioned external loudspeakers. Those external sources were test stimuli/interference, **not** the source of the Echo's own background music.
+
+In the result table, **mono** and **stereo** refer **only to the Echo's built-in music/speaker playback setting**:
+
+- **Mono playback:** the Echo reproduces its background music in mono via its own speakers.
+- **Stereo playback:** the Echo reproduces the background music with separate left and right speaker channels.
+
+They **do not** mean single- versus multi-microphone capture, alternative microphone beamforming modes, or mono versus stereo output from Amazon ASP. The same four physical microphones are used in both playback conditions, and the audio delivered to the wake-word detector is mono PCM at 16 kHz. The compared *voice frontends* are stock TECHO5 processing and FrankenASP's original Amazon factory processing. The playback mode can change the echo/reference conditions and thus affect wake-word performance.
 
 ## First-pass results
 
 **Successful wake detections / 60 scheduled utterances** (near misses do *not* count as detections):
 
-| Speech stimulus level | Stock TECHO5 mono | Stock TECHO5 stereo | FrankenASP mono | FrankenASP stereo |
+| Speech stimulus level | Stock TECHO5 + mono music | Stock TECHO5 + stereo music | FrankenASP + mono music | FrankenASP + stereo music |
 | --- | ---: | ---: | ---: | ---: |
 | 30 — quiet | Not in this matched series | Not in this matched series | **41/60 (68.3%)** | **45/60 (75.0%)** |
 | 35 — normal | 45/60 (75.0%) | 22/60 (36.7%) | **59/60 (98.3%)** | **54/60 (90.0%)** |
@@ -22,13 +33,13 @@ The **30/35/40 labels denote controlled stimulus playback levels**, used here as
 
 - Same physical Athena Echo Show 8 Gen 2, wake-word model, room arrangement, and scripted speech material.
 - Five predefined spatial scenarios per level, **12 utterances each** (60 per mode/level), including separately positioned voice and interfering TV audio.
-- Fixed background music track, controlled restart/playback position, playback-state verification, and explicit mono/stereo selection.
+- Fixed background music played **by the Echo's own speakers**, controlled track restart/playback position, playback-state verification, and explicit **speaker music output** mono/stereo selection. The wake-word stimulus and, where applicable, TV interference came from external spatially positioned loudspeakers.
 - Wake events/near misses collected from device logs and matched to the stimulus schedule. Completed stock runs cover levels 35 and 40; FrankenASP was tested at 30, 35 and 40 with both speaker modes.
 - The prototype uses four real microphone channels and the original factory speech-processing library. Amazon binaries, calibration data, private voice recordings and raw device logs are **not** distributed in this repository.
 
 ## What this establishes — and what it does not
 
-Within these tested conditions, the factory ASP path consistently achieved **markedly better wake-word capture**, including adverse spatial/interference scenarios and the stereo-output condition. The results demonstrate the size of the current practical voice-input gap; they **do not identify AEC, beamforming, beam selection, denoising, or any particular component as its proven cause**.
+Within these **Echo-playing-music** conditions, the factory ASP path consistently achieved **markedly better wake-word activation rates**, including adverse spatial/interference scenarios and the stereo speaker-playback condition. The results demonstrate the size of the current practical voice-input gap; they **do not identify AEC, beamforming, beam selection, denoising, or any particular component as its proven cause**.
 
 The prototype does not reproduce the complete original Fire OS voice stack. Long-running stability, false-positive rate, cross-device and cross-firmware compatibility, and **post-wake command intelligibility/STT under spatial interference** remain for later research.
 
