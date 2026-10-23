@@ -15,12 +15,14 @@ DIR="$(cd "$(dirname "$0")/../../echod" && pwd)"
 command -v go >/dev/null || { echo "Go 1.26 toolchain required" >&2; exit 2; }
 command -v git >/dev/null || { echo "git is required" >&2; exit 2; }
 COMMIT="$(git -C "$DIR" rev-parse --short=10 HEAD)"
-if [[ -n "$(git -C "$DIR" status --porcelain -- internal/hardware/mic ../tools/frankenasp ../echod/internal/update)" ]]; then
-    echo "WARNING: experimental source modifications are uncommitted; commit before publishing provenance" >&2
+DIRTY=
+if [[ -n "$(git -C "$DIR" status --porcelain --untracked-files=normal)" ]]; then
+    DIRTY=.dirty
+    echo "WARNING: working tree is not committed; version will carry .dirty provenance" >&2
 fi
 # '_' is stripped for HA's version rank; normal newer upstream releases
 # remain visible. A normal latest stable or dev rootfs has no FrankenASP.
-VERSION="${BASE}_frankenasp.${COMMIT}"
+VERSION="${BASE}_frankenasp.${COMMIT}${DIRTY}"
 NOW="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 PKG="github.com/HuskerMinion/techo5/echod/internal/layout"
 mkdir -p "$(dirname "$OUT")"
