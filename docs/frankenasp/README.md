@@ -116,6 +116,7 @@ See [multi-device compatibility and portability scope](multi-device-scope.md).
 - [Optional reboot persistence, fail-safe fallback, and TECHO5 update interaction](installation.md#c-optional-persistence-across-ordinary-reboots-advanced-owners)
 - [Observed Athena persistent reboot/fallback trial (2026-10-23): confirmed boot and stock recovery; native PCM quality still unverified](persistence-trial-20261023.md)
 - [Verification of previously captured real factory PCM16 output (2026-10-23): signal integrity, level comparisons and AEC limitations](real-factory-pcm-validation-20261023.md)
+- [Live 8-second native factory PCM probe (2026-10-23): 999 valid aligned Version33 frames, synchronized 4-mic/AWB capture, automatic rollback](live-factory-output-pcm-probe-20261023.md)
 - [Controlled comparison protocol](testing.md)
 - [Stage 3 preparation: input integrity, zero-AWB finding, factory preflight and acoustic test metadata](stage3-preparation-20261023.md)
 
