@@ -132,6 +132,8 @@ See [multi-device compatibility and portability scope](multi-device-scope.md).
 
 ## Documentation
 
+- [FrankenASP 1.0 Dev Edition 1: release scope and known limitations](release-v1.0.0-dev.1.md)
+- [Independent build on Ubuntu 26.04: verified Go toolchain, packages, tests and build commands](build-on-ubuntu-26.04.md)
 - [Architecture and open questions](architecture.md)
 - [Multi-device scope: why 37 factory files are *not* universal Echo profiles](multi-device-scope.md)
 - [Exact Athena factory paths, ELF dependencies and surviving partitions](partition-dependencies-20261023.md)
