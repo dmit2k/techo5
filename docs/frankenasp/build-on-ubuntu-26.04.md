@@ -13,7 +13,7 @@ This records a **fresh-host, independent** build/verification on `independent bu
 | Go | **1.26.0** linux/amd64 (official archive, downloaded independently) |
 | Python | 3.14.4 (standard library sufficient for 31 installer/protocol tests) |
 | GCC / Clang | GCC 15.2 / Clang 21 present, not needed for `CGO_ENABLED=0` ARM64 daemon |
-| Auxiliary tools | `git`, `curl`, `ca-certificates`, `file`, `binutils/readelf`, `e2fsprogs/debugfs`, `patchelf`, `openssh-client`, `tar` |
+| Auxiliary tools | Git, curl, CA certificates, file, binutils/readelf, e2fsprogs/debugfs, SSH and tar installed; **patchelf was absent on this build-only host** (required for the separate owner-backup installer/staging workflow) |
 
 On a normal Ubuntu host, the prerequisite packages are:
 
