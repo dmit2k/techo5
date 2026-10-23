@@ -117,6 +117,8 @@ class PersistentSetupTests(unittest.TestCase):
         self.assertFalse((self.data / "frankenasp-persistent.enabled").exists())
         self.assertEqual(self.control("uninstall-hook").returncode, 0)
         self.assertEqual(before, self.runner.read_bytes())
+        # Reinstall after clean removal reuses only an identical backup.
+        self.assertEqual(self.control("install-hook").returncode, 0)
 
     def test_fork_once_per_boot_and_fallback_after_crash(self):
         self.assertEqual(self.launch().stdout, "STOCK_STARTED\n")
