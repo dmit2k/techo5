@@ -71,10 +71,10 @@ Build your **own** experimental daemon from this exact experimental
 branch. Example for an appropriately configured Go toolchain:
 
 ```sh
-cd echod
-CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
-  -o ../techo5-experimental ./cmd/echod
-cd ..
+# Use the actual TECHO5 release currently installed on the Echo as the base.
+# Example: v1.6.0. No upstream version is faked or raised merely to hide updates.
+export PATH="/path/to/go1.26/bin:$PATH"
+bash tools/frankenasp/build_experimental.sh v1.6.0 ./techo5-experimental
 ```
 
 Check the resulting ELF:
@@ -306,6 +306,125 @@ directory yourself, and must not start a trial until validation succeeds.
 Running `trial.sh start` is a **separate, time-limited, deliberately
 authorized experiment**, and is **not part of either installation
 method**. No acoustic experiments are performed in this stage.
+
+## C. Optional persistence across ordinary reboots (advanced owners)
+
+**NOT enabled by the installer.** Enable only after you have independently
+qualified this version of the factory voice-input chain and have a working
+recovery path. No persistent changes were applied to the research Echo.
+
+The regular `trial.sh` mechanism is deliberately temporary. A new,
+separately authorized launcher hook lets the owner opt into **persisting
+FrankenASP across ordinary reboots of the current TECHO5 A/B slot**.
+It modifies **one shell launcher in that slot's TECHO5 filesystem**,
+not the original Amazon `/vendor`, boot kernel, official TECHO5 executable
+or a factory firmware image. This is an actual write to the TECHO5
+**system-slot store**, so it is intentionally separate from the safe
+read-only install/preflight stages.
+
+### Version is now explicit
+
+Without `-ldflags`, Go builds were reported by TECHO5 as
+`v0.0.0-dev (unknown, unknown)`. The owner build helper above stamps
+a comparable build identity such as `v1.6.0_frankenasp.abcdef1234`
+plus its source revision and build date. The **base version** is the
+actual official TECHO5 release used for comparison; it is chosen
+explicitly. Do not stamp a fake, high future version to suppress
+updates. Home Assistant's comparison ignores the part after `_`,
+so a future official `v1.6.1` may still be offered.
+
+For persistent operation, **rebuild with the current experimental
+source** including `frankenasp_guard.go`, which refuses official
+rootfs installation while this mode is active or requested. The
+earlier `v0.0.0-dev` binary must **not** be used for persistence.
+
+### Three explicit actions
+
+After `install.py --install` has staged your correctly versioned
+experimental daemon and all files have passed their SHA-256 checks:
+
+```sh
+ECHO=root@YOUR_ECHO_IP
+P=/data/techo5-linux/frankenasp-trial/persist.sh
+
+# 1. Inspect the running settled slot and existing state (read only).
+ssh "$ECHO" "sh $P status"
+
+# 2. Patch ONLY the current good TECHO5 slot's launcher.
+#    The original is kept beside it as techo5-run.frankenasp.stock.
+#    This changes NO running service and doesn't activate factory ASP.
+ssh "$ECHO" "sh $P install-hook"
+
+# 3. Separately request persistence (a file under /data).
+ssh "$ECHO" "sh $P enable"
+
+# Reboot the Echo manually when ready; no automated reboot is issued.
+```
+
+The hook runs after TECHO5's normal device/network preparation. Before
+launching the experimental daemon, it checks the owner's runtime and
+experimental daemon against their private SHA-256 manifests, verifies
+the exact tested stock `libasp.so` identity, rejects a `v0.0.0-dev`
+build, and checks that no temporary trial or binary bind mount is active.
+Only then does it create the transient `/run/techo5/frankenasp-armed`
+marker and start the experimental daemon from `/data`.
+
+**Fail-safe behavior:**
+
+- **Missing/altered payload, library version mismatch, unsupported
+  version:** the stock TECHO5 daemon starts instead.
+- **Experimental daemon exits/crashes:** the stock launcher starts on
+  the next init respawn; FrankenASP is attempted **at most once per boot**.
+  Future persistence is disabled if this early failure is observed.
+- **Unexpected reboot while first startup is unconfirmed:** a private
+  `startup.pending` marker survives. The next boot refuses to run
+  FrankenASP and clears the persistent opt-in; this avoids a repeated
+  kernel-reboot loop. A lightweight verifier clears the pending marker
+  only after **120 seconds** with a real native factory worker mapped.
+  This probation check is a safety mechanism, **not** the deferred
+  long-duration acoustic/AFE stability qualification.
+- **Different A/B slot on boot:** only a slot carrying the opt-in hook
+  can start FrankenASP. An ordinary upstream rootfs has no hook and
+  boots stock TECHO5 even if owner-private files remain on `/data`.
+
+The stock daemon remains at `/usr/local/bin/techo5`. There is no
+persistent bind mount over the official binary.
+
+### Disable, then update normally
+
+```sh
+# Disable persistence without stopping playback or crashing a daemon.
+ssh "$ECHO" "sh $P disable"
+# Then REBOOT once into the ordinary stock daemon.
+# You may then use Update from Home Assistant/TECHO5 normally.
+
+# Optional cleanup of the current slot's launcher hook, after reboot:
+ssh "$ECHO" "sh $P uninstall-hook"
+```
+
+The experimental `echod` refuses a normal TECHO5 update (including
+overnight auto-install and a click on **Install now**) if either the
+persistent opt-in or the boot-scoped active marker exists. The user
+gets a message explaining to run `persist.sh disable`, reboot, and
+retry the official update. **This block is specific to the FrankenASP
+experimental fork.** It does not modify upstream releases or Home
+Assistant itself.
+
+A stock TECHO5 update on Athena downloads a **whole A/B rootfs** into
+the other slot and reboots there. It will **not** bring FrankenASP along
+automatically, and it does not delete the owner's factory runtime from
+`/data`. An upgrade performed by a separate recovery tool or `slotctl`
+bypasses the experimental daemon's update guard; in that case the
+new unpatched slot boots **stock**, not FrankenASP. If a broken upgrade
+later rolls back to a previously patched slot and the owner has
+left persistence enabled, its hook can run again; use `disable` first
+for a deliberate transition.
+
+**Do not enable persistence on the currently staged legacy research
+binary** (which reports `v0.0.0-dev`). Rebuild, restage its experimental
+daemon, regenerate its owner-private SHA-256 manifest, and only then
+use the opt-in steps. The installer itself refuses to overwrite an
+existing runtime; a manual migration must be reviewed separately.
 
 ## Troubleshooting and limits
 
