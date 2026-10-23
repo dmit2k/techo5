@@ -48,10 +48,16 @@ require_payload() {
     case "$ver" in "echod version v"*"_"frankenasp*) : ;; *) die "rebuild experimental daemon with FrankenASP version stamp (not v0.0.0-dev)" ;; esac
 }
 patch_runner() {
-    [ ! -e "$stock" ] || die "slot hook was already installed or backup exists"
     [ "$(grep -Fxc "$ANCHOR" "$runner")" -eq 1 ] || die "unknown stock launcher; refusing patch"
     ! grep -Fq "$MARKER" "$runner" || die "hook already present"
-    cp -p "$runner" "$stock" || die "failed backing up launcher"
+    if [ -e "$stock" ]; then
+        # An earlier uninstall kept its original snapshot. Reuse it only
+        # when the current launcher is IDENTICAL to that snapshot.
+        [ -f "$stock" ] && cmp -s "$stock" "$runner" ||
+            die "preexisting launcher backup differs; review manually"
+    else
+        cp -p "$runner" "$stock" || die "failed backing up launcher"
+    fi
     file="$runner.frankenasp.new"
     awk -v anchor="$ANCHOR" -v marker="$MARKER" '
        $0 == anchor {
