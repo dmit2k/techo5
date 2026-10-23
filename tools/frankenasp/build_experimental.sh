@@ -15,10 +15,22 @@ DIR="$(cd "$(dirname "$0")/../../echod" && pwd)"
 command -v go >/dev/null || { echo "Go 1.26 toolchain required" >&2; exit 2; }
 command -v git >/dev/null || { echo "git is required" >&2; exit 2; }
 COMMIT="$(git -C "$DIR" rev-parse --short=10 HEAD)"
+ROOT="$(git -C "$DIR" rev-parse --show-toplevel)"
 DIRTY=
 if [[ -n "$(git -C "$DIR" status --porcelain --untracked-files=normal)" ]]; then
-    DIRTY=.dirty
-    echo "WARNING: working tree is not committed; version will carry .dirty provenance" >&2
+    # A plain .dirty would give DIFFERENT experimental binaries identical
+    # advertised versions. Include a short digest of the current source
+    # changes and untracked owner-authored code; nothing is sent anywhere.
+    CHANGE_HASH="$(
+      {
+        git -C "$ROOT" diff --binary -- echod tools/frankenasp
+        git -C "$ROOT" ls-files --others --exclude-standard -- echod tools/frankenasp |
+          LC_ALL=C sort |
+          while IFS= read -r path; do sha256sum "$ROOT/$path"; done
+      } | sha256sum | cut -c1-12
+    )"
+    DIRTY=".dirty.${CHANGE_HASH}"
+    echo "WARNING: uncommitted sources included in experimental version digest ${CHANGE_HASH}" >&2
 fi
 # '_' is stripped for HA's version rank; normal newer upstream releases
 # remain visible. A normal latest stable or dev rootfs has no FrankenASP.
