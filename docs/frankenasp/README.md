@@ -72,15 +72,26 @@ itself grant permission to redistribute third-party materials.
 ### First controlled acoustic results (23 October 2026)
 
 On an Echo Show 8 Gen 2 (Athena), the original Amazon voice-input ASP
-achieved substantially higher **wake-word detection** rates than stock
-TECHO5 under repeated, spatially varied acoustic playback. At the
-normal-level (35) stimulus, stock mono/stereo detected **45/60 and
-22/60** utterances, versus **59/60 and 54/60** with FrankenASP.
+achieved substantially higher **wake-word activation** rates than stock
+TECHO5 in controlled trials **while the Echo itself was playing
+background music through its built-in speakers**. Here **mono/stereo**
+means **mono or stereo playback of that music by the Echo**, *not*
+microphone-array operation or mono/stereo ASP processing. All four
+microphones were used; the wake-word input remained mono PCM16 at 16 kHz.
+Speech stimuli and, where applicable, interfering TV sound came from
+separate external loudspeakers at predefined positions.
+
+At the normal-level (35) voice stimulus, stock TECHO5 with Echo music
+in mono/stereo detected **45/60 and 22/60** utterances; with the same
+Echo playback modes, FrankenASP detected **59/60 and 54/60**.
 The observed effective wake threshold was **0.75 for stock TECHO5**
-during music and **0.85 for FrankenASP**. These are preliminary
-end-to-end observations, **not** proof that any one Amazon algorithm
-(AEC, beamforming, etc.) caused the improvement. See the
-[concise results and test scope](acoustic-results-20261023.md).
+during music and **0.85 for FrankenASP**.
+
+**This first result is wake-word detection only:** intelligibility and
+STT accuracy of subsequent voice commands have **not yet been tested**.
+These are preliminary end-to-end observations, **not** proof that any
+one Amazon algorithm (AEC, beamforming, etc.) caused the improvement.
+See the [concise results and exact scope](acoustic-results-20261023.md).
 
 ## Contents
 
