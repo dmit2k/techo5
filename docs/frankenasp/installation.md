@@ -402,9 +402,11 @@ ssh "$ECHO" "sh $P disable"
 ssh "$ECHO" "sh $P uninstall-hook"
 ```
 
-The experimental `echod` refuses a normal TECHO5 update (including
-overnight auto-install and a click on **Install now**) if either the
-persistent opt-in or the boot-scoped active marker exists. The user
+The experimental `echod` refuses a manual normal TECHO5 update (a
+click on **Install now**) if either the persistent opt-in or the
+boot-scoped active marker exists. Its overnight automatic-update loop
+**skips** the attempt while persistence is enabled, rather than
+repeatedly reporting an installation failure. The user
 gets a message explaining to run `persist.sh disable`, reboot, and
 retry the official update. **This block is specific to the FrankenASP
 experimental fork.** It does not modify upstream releases or Home
