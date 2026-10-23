@@ -46,3 +46,18 @@ func TestFrankenPersistenceGuardsUpdate(t *testing.T) {
 		t.Fatal("I/O error must fail closed")
 	}
 }
+
+// A custom suffix remains HA-rankable and cannot hide the next upstream
+// release. It also must not invent an unattainable future TECHO5 version.
+func TestFrankenBuildStampVersionOrdering(t *testing.T) {
+	stamped := "v1.6.0_frankenasp.abcdef1234"
+	if err := ValidVersion(stamped); err != nil {
+		t.Fatalf("stamped version rejected: %v", err)
+	}
+	if !Newer("v1.6.1", stamped) {
+		t.Fatal("a newer official release must remain visible")
+	}
+	if Newer("v1.6.0", stamped) {
+		t.Fatal("an identical official base version is not newer")
+	}
+}
