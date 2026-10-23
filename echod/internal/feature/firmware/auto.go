@@ -71,6 +71,14 @@ func (u *Firmware) autoLoop(ctx context.Context) {
 			continue
 		}
 		tried = now.Format("2006-01-02")
+		if update.FrankenASPPersistenceActive() {
+			// An owner-installed Athena DSP fork must not be replaced by the
+			// upstream whole-rootfs updater in the middle of the night.
+			// Manual Install remains available but explicitly refuses until
+			// persistent mode is disabled and the unit rebooted into stock.
+			slog.Info("automatic TECHO5 update skipped: FrankenASP persistence enabled")
+			continue
+		}
 		if !update.Published() {
 			// A panel's app looks and installs in one go (askApp), and installs nothing that is not newer.
 			slog.Info("asking the app to install an update by itself, overnight")
