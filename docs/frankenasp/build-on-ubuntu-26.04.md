@@ -88,6 +88,21 @@ readelf -h ./libasp_stream_worker.so | grep -E 'Class:|Machine:'
 
 The ARM32 worker requires an independently installed official Android NDK; it is **not** produced by the Go-only build above. Private factory binaries, original Bionic runtime files, DSP configurations, factory beamformer coefficients and user recordings are **not** included in this repository or a public release. Use the owner-specific read-only preflight, explicit `--install`, guarded activation and rollback procedures in [installation.md](installation.md).
 
+### Independent native-worker build actually performed on `gptlab-core`
+
+The additional **ARM32/Bionic native worker** was successfully built using **Android NDK r27d (27.3.13750724)**, downloaded from Google's official Android repository. Google's release checksums list the `android-ndk-r27d-linux.zip` size as **663,956,036 bytes**, SHA-1 **`22105e410cf29afcf163760cc95522b9fb981121`**, which was verified after the download. No proprietary Amazon files were needed.
+
+The output was verified as `ELF32 ARM EABI5`, API 28, built by NDK r27d, and the worker's glibc-reference guard passed:
+
+```text
+libasp_stream_worker.so SHA-256:
+7017258766e7496b088a8b11b06b7b5ed11ae647c55831c3ee58aacab47dd649
+```
+
+The local connected-command environment did not preserve executable permissions or symlinks when extracting the NDK ZIP with Python's `zipfile.extractall`, so the original ZIP Unix mode bits and **35 symlinks** had to be restored from archive metadata before invoking its compiler. A conventional `unzip` extraction should preserve those attributes. This is a tooling note, **not** a FrankenASP code dependency.
+
+**Build execution resources:** the independent host has 31 GiB RAM, but its private HomeLab execution bridges imposed **768 MiB service cgroup memory limits**, which caused an unrelated Go compiler process to be killed by the environment. The final Go CI therefore runs through the already connected Desktop Commander service on the **same `gptlab-core` host** without that artificial 768 MiB limit. This is an execution-adapter limitation, not a functional or hardware compatibility claim.
+
 ## Scope and safety
 
 Supported research prototype: **Echo Show 8 Gen 2 (Athena)** with the specifically validated original factory DSP revision and TECHO5 AArch64 baseline. Short guarded runs, native PCM continuity, a persistent startup probation/stock fallback, and controlled **wake-word-only** acoustic comparisons have been demonstrated. Published mono/stereo modes describe the Echo's **own background-music speaker output**, not its microphone channel count. Post-wake STT, longitudinal stability, false-positive qualification, alternate factory firmware and other Echo models remain unverified.
