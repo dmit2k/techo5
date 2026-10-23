@@ -281,10 +281,15 @@ separate trial directory. This is a storage operation only.
 mkdir -m 700 -p "$STAGE/trial"
 cp ./techo5-experimental "$STAGE/trial/techo5-experimental"
 cp tools/frankenasp/trial.sh "$STAGE/trial/trial.sh"
+# Optional persistence scripts are copied but remain COMPLETELY INACTIVE.
+cp tools/frankenasp/persist.sh tools/frankenasp/persistent-run.sh \
+   tools/frankenasp/persist-watch.sh "$STAGE/trial/"
 chmod 700 "$STAGE/trial/"*
 ( cd "$STAGE/trial" &&
-  sha256sum techo5-experimental trial.sh > SHA256SUMS )
-tar -C "$STAGE/trial" -cf - techo5-experimental trial.sh SHA256SUMS |
+  sha256sum techo5-experimental trial.sh persist.sh persistent-run.sh \
+    persist-watch.sh > SHA256SUMS )
+tar -C "$STAGE/trial" -cf - techo5-experimental trial.sh \
+    persist.sh persistent-run.sh persist-watch.sh SHA256SUMS |
   ssh "$ECHO" 'tar -C /data/techo5-linux/frankenasp-trial -xf -'
 ssh "$ECHO" 'cd /data/techo5-linux/frankenasp-trial &&
              sha256sum -c SHA256SUMS >/dev/null && echo TRIAL_FILES_MATCH'
