@@ -75,3 +75,20 @@ time-out and unexpected worker disappearance call rollback; log in
 `/data/techo5-linux/frankenasp-trial/trial-events.log`. Inspect its status,
 the original daemon's health and playback/capture before extending any test.
 The trial is *not* a supported unattended permanent installation.
+
+## Optional persistent mode (separate from the temporary trial)
+
+See [the installer and persistence guide](installation.md#c-optional-persistence-across-ordinary-reboots-advanced-owners).
+It provides a version-stamped experimental daemon, a separately authorized
+launcher hook **only in the current settled Athena rootfs slot**,
+a private owner opt-in flag, per-boot checks of staged ELF/runtime hashes,
+120-second startup probation, and a one-attempt-per-boot fallback to the
+original daemon. The official binary is **never overwritten** by this hook.
+
+**Upstream TECHO5 rootfs updates are blocked while the opt-in or boot-scoped
+FrankenASP active flag exists**. Disable and reboot to stock before using the
+TECHO5 or Home Assistant update button. Updating by `slotctl` outside the
+experimental daemon bypasses this guard: the new, unpatched slot boots stock
+and does not automatically reenable FrankenASP. This is a deliberate safety
+boundary, not cross-release persistence. The experimental hook is opt-in and
+has not been applied to the working research Echo.
