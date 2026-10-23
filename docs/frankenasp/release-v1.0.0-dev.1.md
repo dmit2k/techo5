@@ -36,9 +36,14 @@ More results, including quiet/loud stimuli, limitations and study boundaries: [I
 - The experimentally deployed ARM32 worker and Amazon `libasp.so` were verified loaded together on real Athena hardware; continuous output was observed after reboot.
 - Short live trials, watchdog/fallback and native PCM signal-integrity tests were performed; long-duration stability qualification remains open.
 - The open staging/protocol suite contains **31 Python tests**, passed on an independent Ubuntu 26.04 host.
-- Key Go microphone, firmware and update-package tests have passed. Full multi-build Go CI is a release gate and must be reported honestly as passed **only after** a successful clean-checkout run.
-- A separate, clean Ubuntu 26.04 x86_64 host and an official checksum-verified Go 1.26.0 toolchain are documented in [independent build instructions](build-on-ubuntu-26.04.md).
+- **Independent full Go CI: PASS on all four configurations** at source commit `8fc18e89ca5585de7d144d3d7f61007b07782e69`. On an Ubuntu 26.04 x86_64 clean checkout with Go 1.26.0, `go test -p 3 ./... -count=1` succeeded for default, `-tags dot`, `-tags spot` and `-tags panel`. Cross-platform `GOOS=windows` and `GOOS=darwin` vet checks for `./cmd/techo5-deck` also passed.
+- **Independent AArch64 build: PASS**, using the version-stamped clean-tree builder (`v1.6.0_frankenasp.<commit>`), producing a statically linked ELF64 ARM aarch64 executable with no `.dirty` suffix.
+- **Independent ARM32 worker build: PASS**, using the officially checksummed Android NDK r27d. It produced an Android API 28 ELF32 ARM shared library, with no host-glibc linkage.
+- The first independent CI attempt exposed a cross-device compilation error in `frankenasp_guard.go` when building Dot. It was corrected to use `layout.AthenaMainline()` in commit `8fc18e8`, **then all four complete Go configurations were rerun and passed**.
+- The separate, clean Ubuntu 26.04 x86_64 host and official Go 1.26.0/Android NDK toolchains are documented in [independent build instructions](build-on-ubuntu-26.04.md).
 - Original factory libraries, Bionic runtime, device-private coefficients, backups, microphone recordings, credentials and unredacted logs are **not distributed**.
+
+**Hardware-provenance boundary:** the wake-word acoustic tests used an earlier owner-built experimental daemon on the same Athena. The newly built clean-commit artifacts have passed off-device build/static tests but **have not been deployed back to the Echo for another acoustic run**. This Dev Edition is a validated research code baseline, not a second completed field qualification of a byte-identical release binary.
 
 ## Explicitly not qualified
 
