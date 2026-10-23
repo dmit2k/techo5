@@ -50,6 +50,15 @@ speaker volume settings were changed during the run.
 | Mic RAW SHA-256 | `d495d396416acf04087592e2a4820290f4d8066dd7a7861b68590b62f4ce1523` |
 | AWB RAW SHA-256 | `76ed5c9c326ba62322d464a22d3fcf7b76c7352c6d33badc36ccea7a33325e97` |
 
+An independent FFmpeg volumedetect pass over the same private
+factory PCM confirmed **-68.2 dBFS** whole-band RMS and
+**-54.7 dBFS** peak. Filtered passbands give approximately
+**-70.7 dBFS** below 250 Hz, **-73.3 dBFS** for 250–3500 Hz,
+and **-90.3 dBFS** above 3500 Hz (first-order filter-based
+diagnostics; approximate, not calibrated orthogonal-band energy
+accounting). Most energy in this quiet sample is at lower
+frequencies; these figures cannot establish speech intelligibility.
+
 The raw microphone channels are approximately **-72 to -73 dBFS**,
 therefore the factory output's -68 dBFS alone is **not** evidence
 of severe additional attenuation. No known spoken utterance was
