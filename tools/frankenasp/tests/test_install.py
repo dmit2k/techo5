@@ -99,6 +99,30 @@ class SetupTests(unittest.TestCase):
             result = install.validate_device("root@example")
         self.assertTrue(result["runtime_already_exists"])
 
+    def test_prepare_bundles_disabled_persistence_and_hashes(self):
+        # Only synthetic native sources; never extract real factory files.
+        with tempfile.TemporaryDirectory() as d:
+            stage = Path(d) / "stage"
+            binary = Path(d) / "fake-arm64-binary"
+            binary.write_text("synthetic fork")
+            def fake_extract(_image, payload):
+                sysroot = payload / "amazon-arm32/system/bin"
+                sysroot.mkdir(parents=True)
+                (sysroot/"sh-native").write_text("fake bionic")
+            def fake_worker(payload, _worker, _ndk):
+                (payload/"amazon-arm32/libasp_stream_worker.so").write_text("fake worker")
+            with mock.patch.object(install, "extract_system", side_effect=fake_extract), \
+                 mock.patch.object(install, "make_worker", side_effect=fake_worker), \
+                 mock.patch.object(install, "make_native_shell"), \
+                 mock.patch.object(install, "assert_arm_elf"):
+                payload = install.prepare(Path("fake.img"), stage, None, None, binary)
+            trial = payload / "frankenasp-trial"
+            for name in ("persist.sh", "persistent-run.sh", "persist-watch.sh"):
+                self.assertTrue((trial/name).is_file())
+                self.assertIn(name, (trial/"SHA256SUMS").read_text())
+            self.assertFalse((stage/"frankenasp-persistent.enabled").exists())
+            self.assertFalse((payload/"fireos-asp.enabled").exists())
+
     def test_install_keeps_factory_mode_off(self):
         with tempfile.TemporaryDirectory() as d:
             payload = Path(d)/"device"
