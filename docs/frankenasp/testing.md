@@ -4,7 +4,8 @@
 |---|---|---|
 | Official mono | mono | TECHO5 software AEC |
 | Official stereo | stereo | TECHO5 software AEC |
-| Franken ASP | stereo | original native processor, physical AWB |
+| FrankenASP mono | mono | original native factory processor, physical AWB |
+| FrankenASP stereo | stereo | original native factory processor, physical AWB |
 
 Hold constant wake model, threshold, sound level, room positions, playback
 content, background and STT pipeline. Report true positives, false
@@ -24,16 +25,17 @@ AEC. Publish aggregates and only synthetic or explicitly consented
 recordings. Never share unredacted device logs, private audio, IDME,
 factory coefficients or original software images.
 
-The guarded Athena proof-of-concept has passed short live startup,
-worker-failure and stalled-IPC recovery tests. No further live audio
-experiments or long-duration AFE stability test are planned in this phase.
-The reproducible offline A/B comparison is **deferred until after the
-scheduled acoustic capture session**, which will provide more labeled
-four-microphone and hardware-reference recordings.
+The guarded Athena proof-of-concept passed short live startup,
+worker-failure and stalled-IPC recovery tests. Controlled playback-based
+**wake-word acoustic trials were completed on 23 October 2026**;
+see the [initial concise results](acoustic-results-20261023.md).
+These trials do not replace future synchronized four-microphone/AWB
+recordings, post-wake STT comparisons, or long-duration AFE stability tests.
 
 Follow the [Stage 3 preparation checklist](stage3-preparation-20261023.md)
 before declaring any recorded clip suitable for AEC comparisons: in
 particular, ALSA reference-frame delivery is not evidence of nonzero
-playback-reference samples. Keep the stock cutoff 0.75 and fixed 0.85
-as **separate documented conditions**, never an unlogged setting change.
+playback-reference samples. The measured stock effective cutoff was 0.75
+during music, while FrankenASP remained at 0.85. Record this explicitly
+in every comparison; do not silently assume a common threshold.
 
