@@ -539,6 +539,7 @@ func (c *pairedCapture) lost(err error) error {
 // convert decimates what Read gathered, mics and ref (nil without a reference), into out. The sizes
 // agree: every output frame is a whole number of input frames on each.
 func (c *pairedCapture) convert(out, mics, ref []byte) {
+	c.meter.source = "techo5_fir"
 	frameBytes := Channels * Bits / 8
 	frames := len(out) / frameBytes
 
@@ -607,18 +608,29 @@ func (c *pairedCapture) factoryAux16(out, mic96, awb96 []byte) {
 	const step = 6
 	frameBytes := Channels * Bits / 8
 	n := len(out) / frameBytes
+	// Unlike convert(), this bypasses the FIR decimators. Record coarse
+	// RAW-input levels from the same samples used by the diagnostic frame,
+	// or athenaMeter misleadingly reports -150 dBFS for every microphone
+	// even while native factory ASP is receiving nonzero PCM.
+	// These meters are not measurements of processed factory ASR output.
+	c.meter.source = "raw_1_in_6"
 	for f := 0; f < n; f++ {
 		for ch := 0; ch < 4; ch++ {
 			i := (f*step*4 + ch) * 4
 			v := int32(binary.LittleEndian.Uint32(mic96[i:])) >> 8
 			o := f*frameBytes + ch*3
 			out[o], out[o+1], out[o+2] = byte(v), byte(v>>8), byte(v>>16)
+			x := float32(v) / (1 << 23)
+			c.meter.mic[ch] += float64(x) * float64(x)
+			c.meter.micPeak[ch] = max(c.meter.micPeak[ch], abs32(x))
 		}
 		for ch := 0; ch < 2; ch++ {
 			i := (f*step*2 + ch) * 2
 			v := int32(int16(binary.LittleEndian.Uint16(awb96[i:]))) << 8
 			o := f*frameBytes + (RefFirst+ch)*3
 			out[o], out[o+1], out[o+2] = byte(v), byte(v>>8), byte(v>>16)
+			x := float64(int16(binary.LittleEndian.Uint16(awb96[i:]))) / (1 << 15)
+			c.meter.ref[ch] += x * x
 		}
 	}
 }
@@ -688,6 +700,7 @@ func (c *pairedCapture) Close() error {
 // after the boost, as the rest of the daemon hears them. For bring-up: it is how a wake word that
 // did not fire is told apart from microphones that heard nothing.
 type athenaMeter struct {
+	source  string
 	mic     [maxMics]float64
 	micPeak [maxMics]float32
 	ref     [athenaRefChannels]float64
@@ -717,7 +730,7 @@ func (m *athenaMeter) report() {
 		ref[i] = db(m.ref[i] / n)
 	}
 	slog.Info("athena: capture levels", "mic_rms_dbfs", rms, "mic_peak_dbfs", peak, "ref_rms_dbfs", ref,
-		"seconds", m.frames/Rate)
+		"seconds", m.frames/Rate, "meter_source", m.source)
 	*m = athenaMeter{}
 }
 
