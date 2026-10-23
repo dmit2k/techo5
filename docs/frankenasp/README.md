@@ -69,6 +69,19 @@ keep them private and remain responsible for applicable license and
 copyright requirements. The research/benchmarking purpose does not
 itself grant permission to redistribute third-party materials.
 
+### First controlled acoustic results (23 October 2026)
+
+On an Echo Show 8 Gen 2 (Athena), the original Amazon voice-input ASP
+achieved substantially higher **wake-word detection** rates than stock
+TECHO5 under repeated, spatially varied acoustic playback. At the
+normal-level (35) stimulus, stock mono/stereo detected **45/60 and
+22/60** utterances, versus **59/60 and 54/60** with FrankenASP.
+The observed effective wake threshold was **0.75 for stock TECHO5**
+during music and **0.85 for FrankenASP**. These are preliminary
+end-to-end observations, **not** proof that any one Amazon algorithm
+(AEC, beamforming, etc.) caused the improvement. See the
+[concise results and test scope](acoustic-results-20261023.md).
+
 ## Contents
 
 - `echod/internal/hardware/mic/factory_asp_athena.go`: guarded worker invocation,
@@ -118,6 +131,7 @@ See [multi-device compatibility and portability scope](multi-device-scope.md).
 - [Verification of previously captured real factory PCM16 output (2026-10-23): signal integrity, level comparisons and AEC limitations](real-factory-pcm-validation-20261023.md)
 - [Live 8-second native factory PCM probe (2026-10-23): 999 valid aligned Version33 frames, synchronized 4-mic/AWB capture, automatic rollback](live-factory-output-pcm-probe-20261023.md)
 - [Controlled comparison protocol](testing.md)
+- [First controlled acoustic results (2026-10-23): stock mono/stereo vs factory ASP, voice stimulus levels 30/35/40](acoustic-results-20261023.md)
 - [Stage 3 preparation: input integrity, zero-AWB finding, factory preflight and acoustic test metadata](stage3-preparation-20261023.md)
 
 ## Safety and milestones
@@ -126,9 +140,11 @@ The research prototype has now completed limited live **Athena-only**
 trials with time-limited rollback, controlled worker termination and a real
 SIGSTOP-induced native IPC timeout. Detailed observations are in the
 [trial reports](ipc-hang-trial-20261023.md).
-**This is not a qualified release.** Long-duration ALSA/AFE stability,
-acoustic wake-word and AEC performance, cross-firmware compatibility and
-per-device installation remain unvalidated. Do not use the persistent
+**This is not a qualified release.** Initial controlled acoustic
+wake-word testing is now complete on one Athena device (see above).
+Long-duration ALSA/AFE stability, false-positive rate, isolated AEC
+effectiveness, post-wake STT, cross-firmware compatibility and broader
+installation safety remain unvalidated. Do not use the persistent
 `/data/techo5-linux/fireos-asp.enabled` marker alone: the guarded trial
 also requires the explicitly temporary `/run/techo5/frankenasp-armed`
 flag and an independent watchdog.
@@ -136,5 +152,6 @@ flag and an independent watchdog.
 No experiments should overwrite the official TECHO5 binary, modify
 factory partitions or change speaker playback settings as part of
 microphone-quality comparisons. Keep the official release and its recovery method.
-All AEC, beamforming and wake-word quality claims remain provisional
-until measured with appropriately labeled recordings.
+Attribution of these initial wake-word gains to individual algorithms
+such as AEC or beamforming remains a research hypothesis; matched
+microphone recordings and post-wake command tests are future work.
