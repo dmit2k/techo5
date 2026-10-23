@@ -48,7 +48,7 @@ speaker volume settings were changed during the run.
 | Hardware AWB L/R | **digital zero on both channels** |
 | Factory PCM SHA-256 | `0f966e52fe9e62e8de6151b4676262c4e38c64b231c17816873f84ca881aada4` |
 | Mic RAW SHA-256 | `d495d396416acf04087592e2a4820290f4d8066dd7a7861b68590b62f4ce1523` |
-| AWB RAW SHA-256 | `76ed5c9c326ba62322d464a22d3fcf7b76c7352e97` |
+| AWB RAW SHA-256 | `76ed5c9c326ba62322d464a22d3fcf7b76c7352c6d33badc36ccea7a33325e97` |
 
 The raw microphone channels are approximately **-72 to -73 dBFS**,
 therefore the factory output's -68 dBFS alone is **not** evidence
