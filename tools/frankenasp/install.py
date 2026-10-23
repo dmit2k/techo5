@@ -228,6 +228,12 @@ def prepare(image, stage, worker, ndk, binary):
     trials = Path(__file__).resolve().parent / "trial.sh"
     shutil.copyfile(trials, trial / "trial.sh")
     (trial / "trial.sh").chmod(0o700)
+    # Persistency is opt-in through a separate device-local control script.
+    # The installer NEVER patches the boot launcher or sets persistent flags.
+    for filename in ("persist.sh", "persistent-run.sh", "persist-watch.sh"):
+        src = Path(__file__).resolve().parent / filename
+        shutil.copyfile(src, trial / filename)
+        (trial / filename).chmod(0o700)
     checksums(trial)
     return payload
 
