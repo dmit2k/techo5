@@ -114,6 +114,7 @@ See [multi-device compatibility and portability scope](multi-device-scope.md).
 - [Local runtime assembly and limitations](runtime.md)
 - [Owner setup: guarded automatic installer and step-by-step manual instructions](installation.md)
 - [Optional reboot persistence, fail-safe fallback, and TECHO5 update interaction](installation.md#c-optional-persistence-across-ordinary-reboots-advanced-owners)
+- [Observed Athena persistent reboot/fallback trial (2026-10-23): confirmed boot and stock recovery; native PCM quality still unverified](persistence-trial-20261023.md)
 - [Controlled comparison protocol](testing.md)
 - [Stage 3 preparation: input integrity, zero-AWB finding, factory preflight and acoustic test metadata](stage3-preparation-20261023.md)
 
