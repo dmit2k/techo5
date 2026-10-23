@@ -1,8 +1,8 @@
 # FrankenASP adapter for TECHO5 (Athena)
 
-This branch contains **only the Go adapter**. The independent [FrankenASP repository](https://github.com/dmit2k/FrankenASP) is intended to own the original open-source ARM32/Bionic stream worker, guarded installation and rollback scripts, tests, and all research/acoustic documentation.
+This branch contains **only the Go adapter** for the independent [FrankenASP research and benchmarking toolkit](https://github.com/dmit2k/FrankenASP). FrankenASP's primary goal is to enable **repeatable objective measurements and subjective listening comparisons** of the open TECHO5 and original factory Amazon microphone-processing paths **on the same Athena hardware**. The worker and adapter are comparison-enabling tools, **not a proposal to replace TECHO5's audio frontend**. The standalone FrankenASP repository owns the open ARM32/Bionic stream worker, guarded installation and rollback scripts, tests, and research/acoustic documentation.
 
-**This is a working Athena-specific proof of concept, not yet a neutral, stable upstream plugin API.**
+**This is a working Athena-specific research proof of concept, not yet a neutral, stable upstream plugin API.** A future vendor-neutral interface might benefit TECHO5 without requiring Amazon binaries; proposing that interface is optional and separate from comparing the two frontends today.
 
 ## Scope
 
@@ -35,7 +35,7 @@ The TECHO5 release parameter must match the specific official base on the target
 - Mono PCM16 16 kHz output to the standard TECHO5 voice chain
 - An explicit owner-selected flag plus ephemeral arming marker is required; persistence and update fallback remain guarded
 
-The interface and hardware behavior are **unchanged** from the [validated combined Dev Edition 1 snapshot](https://github.com/dmit2k/techo5/tree/snapshot/frankenasp-v1.0.0-dev.1). That snapshot stays intact as the acoustic-test provenance; the split has not yet been acoustically retested on the device.
+The interface and hardware behavior are **unchanged** from the [combined Dev Edition 1 snapshot](https://github.com/dmit2k/techo5/tree/snapshot/frankenasp-v1.0.0-dev.1). That snapshot remains the historical acoustic-test provenance; the split has not yet been acoustically retested on the device. The preliminary advantage was measured **only for wake-word activation while the Echo played music on its own speakers**. Here mono/stereo refers to **that speaker music playback**, not microphone array operation. Actual effective MWW thresholds differed (stock 0.75, FrankenASP 0.85); false-positive trade-offs, post-wake STT, and independent subjective speech-listening comparisons were **not qualified**.
 
 ## Verify
 
