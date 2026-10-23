@@ -350,7 +350,11 @@ func (s *Source) Run(ctx context.Context) error {
 			}
 			return err
 		}
-		s.broadcast(raw[:n])
+		if provider, ok := pcm.(interface{ FactoryOutput() []int16 }); ok {
+			s.broadcastWithFactory(raw[:n], provider.FactoryOutput())
+		} else {
+			s.broadcast(raw[:n])
+		}
 	}
 }
 
@@ -375,7 +379,9 @@ func (s *Source) reportDrops() {
 
 // broadcast hands the frame to every listener, dropping it for any that is behind. The mono mix is
 // only computed when something wants it.
-func (s *Source) broadcast(raw []byte) {
+func (s *Source) broadcast(raw []byte) { s.broadcastWithFactory(raw, nil) }
+
+func (s *Source) broadcastWithFactory(raw []byte, factory []int16) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -383,6 +389,7 @@ func (s *Source) broadcast(raw []byte) {
 	// be heard, kept or streamed.
 	if privacy.SoftwareCut() {
 		clear(raw)
+		clear(factory)
 	}
 
 	// Everything downstream reads the same single channel, whichever way it was made: wake detection
@@ -392,13 +399,18 @@ func (s *Source) broadcast(raw []byte) {
 	// once it has been said, so by the time a turn starts, the words after it are already past.
 	mics := Decode(raw)
 	frame := s.mixer.Mix(mics)
+	if factory != nil {
+		// Already factory ASR AEC + beamforming: do not run TECHO5's
+		// own single-reference canceller on this mono result.
+		frame = factory
+	}
 
 	// While something is playing, an echo canceled fixed path replaces the mix (cancelInput): the filter
 	// learns a single acoustic path, and the beamformer would steer at the loudest thing in the room,
 	// which during playback is the speaker being canceled. It runs whichever output is playing: the jack
 	// is as often a powered speaker in the same room (AUX) as headphones, and where nothing in the room
 	// hears the playback the filter finds no echo and passes the microphone through.
-	if s.canceling && s.cancel != nil {
+	if factory == nil && s.canceling && s.cancel != nil {
 		if canceled := s.cancel.apply(raw, cancelInput(s.mixer, mics, frame)); canceled != nil {
 			frame = canceled
 		}
@@ -424,34 +436,48 @@ func (s *Source) broadcast(raw []byte) {
 
 	s.findFacing(mics)
 
-	// After the echo canceller, so the estimator is not asked to learn the speaker as part of the
-	// room, and before leveling, so the gain is not put back on a floor that has just been removed.
-	if quiet := s.denoising.Load(); quiet {
-		s.denoiser.Apply(frame)
-		s.wasDenoising = true
-	} else if s.wasDenoising {
-		s.denoiser.Forget()
-		s.wasDenoising = false
-	}
+	// Factory ASP already performs the requested ASR processing (AEC, beam,
+	// VAD-related shaping). Do not apply TECHO5's denoiser or automatic gain
+	// on top of it: that would invalidate the listening comparison.
+	if factory == nil {
+		// After the echo canceller, so the estimator is not asked to learn the speaker as part of the
+		// room, and before leveling, so the gain is not put back on a floor that has just been removed.
+		if quiet := s.denoising.Load(); quiet {
+			s.denoiser.Apply(frame)
+			s.wasDenoising = true
+		} else if s.wasDenoising {
+			s.denoiser.Forget()
+			s.wasDenoising = false
+		}
 
-	// Turning leveling off throws away what it learned, so a room it has adapted badly to is
-	// recovered by switching it off and on rather than by restarting anything.
-	on := s.leveling.Load()
-	switch {
-	case on:
-		s.leveler.apply(frame)
-	default:
-		// Measured even with the gain switched off, because how loud the room is has watchers of its
-		// own: the ring can be set to react to it, and that should not depend on a setting about what
-		// Home Assistant hears.
+		// Turning leveling off throws away what it learned, so a room it has adapted badly to is
+		// recovered by switching it off and on rather than by restarting anything.
+		on := s.leveling.Load()
+		switch {
+		case on:
+			s.leveler.apply(frame)
+		default:
+			// Measured even with the gain switched off, because how loud the room is has watchers of its
+			// own: the ring can be set to react to it, and that should not depend on a setting about what
+			// Home Assistant hears.
+			if s.wasLeveling {
+				s.leveler.forget()
+			}
+			if len(frame) > 0 {
+				s.leveler.observe(frame)
+			}
+		}
+		s.wasLeveling = on
+	} else {
+		if s.wasDenoising {
+			s.denoiser.Forget()
+			s.wasDenoising = false
+		}
 		if s.wasLeveling {
 			s.leveler.forget()
-		}
-		if len(frame) > 0 {
-			s.leveler.observe(frame)
+			s.wasLeveling = false
 		}
 	}
-	s.wasLeveling = on
 	s.remember(frame)
 	spectrum.Mic.Push(frame)
 
