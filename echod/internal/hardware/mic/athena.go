@@ -289,6 +289,7 @@ type pairedCapture struct {
 	softOK        bool
 	factory       *factoryASP
 	factoryOutput []int16
+	factoryProbe  *factoryPCMProbe
 }
 
 func openAthena() (capture, error) {
@@ -376,6 +377,13 @@ func openAthena() (capture, error) {
 	if err != nil {
 		_ = c.Close()
 		return nil, fmt.Errorf("factory ASP worker: %w", err)
+	}
+	if c.factory != nil {
+		c.factoryProbe, err = openFactoryPCMProbe()
+		if err != nil {
+			_ = c.Close()
+			return nil, fmt.Errorf("factory PCM probe: %w", err)
+		}
 	}
 	// As Fire OS does once both streams run: the PMIC's microphone path, which is where the bias for
 	// the analog microphones is read to come from (athena_bias.go).
@@ -493,6 +501,9 @@ func (c *pairedCapture) Read(buf []byte) (int, error) {
 			return 0, fmt.Errorf("factory ASP processing: %w", err)
 		}
 		c.factoryOutput = out
+		if c.factoryProbe != nil {
+			c.factoryProbe.push(c.micBuf[:micBytes], c.refBuf[:refBytes], out)
+		}
 	}
 	c.got += uint64(frames)
 	c.meter.frames += frames
@@ -675,6 +686,10 @@ func athenaFactoryAWBOff() {
 
 // Close lets both devices go.
 func (c *pairedCapture) Close() error {
+	if c.factoryProbe != nil {
+		c.factoryProbe.Close()
+		c.factoryProbe = nil
+	}
 	if c.factory != nil {
 		c.factory.Close()
 		c.factory = nil
