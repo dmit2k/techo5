@@ -49,6 +49,16 @@ func Install(ctx context.Context, m Manifest, progress func(float32), phase func
 	}
 	defer installing.Unlock()
 
+	// A user-owned factory-voice DSP fork can be boot-persistent in the
+	// CURRENT Athena slot. A regular TECHO5 update installs a WHOLE rootfs
+	// into the other slot and would silently remove its boot hook. Do not
+	// discard this explicitly enabled experiment via UI, HA or overnight
+	// auto-update. Require the owner to disable it and reboot into the
+	// stock daemon before accepting a normal rootfs update.
+	if err := persistentFrankenUpdateGuard(); err != nil {
+		return err
+	}
+
 	if err := m.Valid(); err != nil {
 		return err
 	}
