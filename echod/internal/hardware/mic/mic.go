@@ -375,6 +375,10 @@ func (s *Source) reportDrops() {
 
 // broadcast hands the frame to every listener, dropping it for any that is behind. The mono mix is
 // only computed when something wants it.
+// ProcessingMode identifies the genuine TECHO5 speech-processing path.
+// This stock-v1.6.0 build only adds optional 15-second wake clip instrumentation.
+func (s *Source) ProcessingMode() string { return "techo5" }
+
 func (s *Source) broadcast(raw []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

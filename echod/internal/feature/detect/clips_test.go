@@ -40,6 +40,179 @@ func TestTheRingKeepsTheLastSecondsInOrder(t *testing.T) {
 }
 
 // Off, nothing is heard into the ring at all, and nothing is saved.
+
+// Research mode collects 4 seconds before a wake and 11 seconds after it.
+// Classification can finish *before* the tail; it must not save a 4-second
+// prefix and pretend it is the full experiment.
+func TestResearchClipIncludesPostWakeSpeech(t *testing.T) {
+	c, saved := testClips(t, true)
+	c.postSamples = 4
+	c.processor = func() string { return "factory_asp" }
+	c.frame([]int16{1, 2})
+	c.scored(0, 0.95, 0.9)
+	c.settle()
+	if len(*saved) != 0 {
+		t.Fatalf("saved before post-wake samples arrived: %+v", *saved)
+	}
+	c.frame([]int16{3, 4})
+	if len(*saved) != 0 {
+		t.Fatal("saved a partial post-wake tail")
+	}
+	c.frame([]int16{5, 6, 7})
+	if len(*saved) != 1 || fmt.Sprint((*saved)[0].pcm) != "[1 2 3 4 5 6]" {
+		t.Fatalf("not exactly the pre/post PCM: %+v", *saved)
+	}
+	if (*saved)[0].mode != "factory_asp" {
+		t.Fatalf("incorrect source label for factory PCM: %q", (*saved)[0].mode)
+	}
+	if len(c.collecting) != 0 {
+		t.Fatal("finished long-clip capture not released")
+	}
+}
+
+// A second classification path is near miss: its post tail must be retained too.
+func TestResearchNearMissIncludesFollowingAudio(t *testing.T) {
+	c, saved := testClips(t, true)
+	c.postSamples = 2
+	c.processor = func() string { return "techo5" }
+	c.frame([]int16{10, 11})
+	c.nearMiss(0, 0.7)
+	if len(*saved) != 0 {
+		t.Fatal("near miss saved before post-event audio")
+	}
+	c.frame([]int16{12, 13})
+	if len(*saved) != 1 || (*saved)[0].kind != "nearmiss" ||
+		fmt.Sprint((*saved)[0].pcm) != "[10 11 12 13]" {
+		t.Fatalf("wrong near-miss post-event PCM: %+v", *saved)
+	}
+	if (*saved)[0].mode != "techo5" {
+		t.Fatalf("incorrect source label for stock DSP: %q", (*saved)[0].mode)
+	}
+}
+
+// Classification may also finish *after* the post capture. The timer's
+// resolution must save the same complete PCM, only once.
+func TestResearchClipCanFinishBeforeClassification(t *testing.T) {
+	c, saved := testClips(t, true)
+	c.postSamples = 2
+	c.frame([]int16{1})
+	c.scored(0, .93, .8)
+	c.frame([]int16{2, 3})
+	if len(*saved) != 0 {
+		t.Fatal("unclassified wake saved before final classification")
+	}
+	c.mistaken(voice.Mistake{Slot: 0})
+	if len(*saved) != 1 || (*saved)[0].kind != "mistake" ||
+		fmt.Sprint((*saved)[0].pcm) != "[1 2 3]" {
+		t.Fatalf("mistake not saved after full clip was assembled: %+v", *saved)
+	}
+	c.settle()
+	if len(*saved) != 1 {
+		t.Fatal("same wake saved twice")
+	}
+}
+
+// No partially recorded wake may straddle a privacy mute.
+func TestResearchClipDiscardedAtMute(t *testing.T) {
+	c, saved := testClips(t, true)
+	c.postSamples = 4
+	c.frame([]int16{1, 2})
+	c.scored(0, .95, .9)
+	c.muted(true)
+	c.frame([]int16{9, 9, 9, 9})
+	c.settle()
+	if len(*saved) != 0 {
+		t.Fatalf("captured across mute: %+v", *saved)
+	}
+}
+
+// A stop-word or an active call must not produce a saved long tail.
+func TestResearchClipDiscardedAtStopWordAndCall(t *testing.T) {
+	for _, kind := range []string{"stop", "call"} {
+		t.Run(kind, func(t *testing.T) {
+			c, saved := testClips(t, true)
+			c.postSamples = 3
+			c.frame([]int16{1, 2})
+			c.scored(0, .95, .9)
+			if kind == "stop" {
+				c.scored(StopSlot, .95, .9)
+			} else {
+				c.blocked = func() bool { return true }
+				c.roomChanged()
+			}
+			c.frame([]int16{10, 11, 12})
+			c.settle()
+			if len(*saved) != 0 {
+				t.Fatalf("saved audio across %s: %+v", kind, *saved)
+			}
+		})
+	}
+}
+
+// The maximum active event count bounds memory under a burst of near-misses.
+func TestResearchClipsHaveBoundedConcurrentCaptures(t *testing.T) {
+	c, _ := testClips(t, true)
+	c.postSamples = 20
+	c.frame([]int16{1})
+	for range maxLongCaptures + 4 {
+		c.nearMiss(0, .7)
+	}
+	if len(c.collecting) != maxLongCaptures {
+		t.Fatalf("unbounded post-event buffers: %d", len(c.collecting))
+	}
+}
+
+// 15s at 16 kHz mono PCM16 is 480,000 bytes and is saved as one WAV
+// with its exact duration in the JSON sidecar.
+func TestResearchWindowIsFifteenSeconds(t *testing.T) {
+	c, _ := testClips(t, true)
+	c.postSamples = researchPostSeconds * clipRate
+	c.frame(make([]int16, clipSeconds*clipRate))
+	c.nearMiss(0, .7)
+	c.frame(make([]int16, researchPostSeconds*clipRate))
+	files, _ := filepath.Glob(filepath.Join(c.dir, "nearmiss", "*.wav"))
+	if len(files) != 0 { // testClips replaces save, so the file must not be written
+		t.Fatal("unexpected file write in test fixture")
+	}
+	// Repeat with direct access to the stubbed saved list.
+	c2, saved := testClips(t, true)
+	c2.postSamples = researchPostSeconds * clipRate
+	c2.frame(make([]int16, clipSeconds*clipRate))
+	c2.nearMiss(0, .7)
+	c2.frame(make([]int16, researchPostSeconds*clipRate))
+	if len(*saved) != 1 || len((*saved)[0].pcm) != researchClipSeconds*clipRate {
+		t.Fatalf("wanted exactly %d samples, got %+v", researchClipSeconds*clipRate, *saved)
+	}
+}
+
+func TestResearchClipSidecarRecordsModeAndDuration(t *testing.T) {
+	c, saved := testClips(t, true)
+	c.postSamples = 2
+	c.processor = func() string { return "factory_asp" }
+	c.frame([]int16{1, 2})
+	c.nearMiss(0, .78)
+	c.frame([]int16{3, 4})
+	if len(*saved) != 1 {
+		t.Fatalf("no completed research clip: %+v", *saved)
+	}
+	c.write((*saved)[0])
+	files, err := filepath.Glob(filepath.Join(c.dir, "nearmiss", "*.json"))
+	if err != nil || len(files) != 1 {
+		t.Fatalf("no sidecar: %v %v", files, err)
+	}
+	b, err := os.ReadFile(files[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got clipMeta
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.ProcessingMode != "factory_asp" || got.DurationSeconds != float64(4)/clipRate {
+		t.Fatalf("incorrect source/duration metadata: %+v", got)
+	}
+}
+
 func TestNothingIsKeptWhileOff(t *testing.T) {
 	c, saved := testClips(t, false)
 	c.frame([]int16{1, 2, 3})
