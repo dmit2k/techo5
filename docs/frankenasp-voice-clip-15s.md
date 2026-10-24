@@ -15,16 +15,16 @@ Each WAV has a JSON sidecar with `processing_mode` (`factory_asp` or `techo5`, o
 The experimental 15-second recorder activates **only at daemon startup** when this marker exists:
 
 ```sh
-touch /data/techo5-linux/wake-clip-15s.enabled
+touch /data/misc/techo5/wake-clip-15s.enabled
 ```
 
 Deploy the **instrumented** `echod` from this experiment branch using your existing safe staging/rollback procedure, then restart the daemon through the supported device mechanism. This marker does nothing in the unmodified official binary. Do not overwrite a protected or baseline binary without a rollback image. To disable extended recording, remove the marker and restart the instrumented daemon; ordinary four-second recording remains available.
 
 ```sh
-rm -- /data/techo5-linux/wake-clip-15s.enabled
+rm -- /data/misc/techo5/wake-clip-15s.enabled
 ```
 
-The resulting WAVs and JSON sidecars are under `/data/techo5-linux/wake-clips/{wake,nearmiss,mistake,noise}/`. The usual Home Assistant actions `wake_clips` and `wake_clip_audio` also expose them. Audio files are private; **do not commit, publish, or upload real speech recordings**.
+The resulting WAVs and JSON sidecars are under `/data/misc/techo5/wake-clips/{wake,nearmiss,mistake,noise}/`. The usual Home Assistant actions `wake_clips` and `wake_clip_audio` also expose them. Audio files are private; **do not commit, publish, or upload real speech recordings**.
 
 ## A/B procedure
 
