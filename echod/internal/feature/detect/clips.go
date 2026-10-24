@@ -3,6 +3,10 @@ package detect
 // Wake word clips, for training a wake word model on what this room really says and hears (#140).
 // Off unless Keep wake clips is turned on, per device.
 //
+// Normally the preceding four seconds are kept. Owner-local research can enable
+// 15-second clips (four seconds before + eleven after each wake/near miss) by placing
+// /data/techo5-linux/wake-clip-15s.enabled before starting echod. Both factory and
+// standard speech paths feed the identical post-processing recorder.
 // The last few seconds the detector heard are kept in memory while it is on, and three moments save
 // them to the device as 16 kHz mono WAVE files under layout.WakeClipDir:
 //
@@ -63,8 +67,15 @@ const (
 	// it fired and a near miss NearMissSettle after its peak, so this is the word and what led up to it.
 	clipSeconds = 4
 
-	// clipsKept is how many of each kind are kept, the oldest going first: at 128 kB a clip, four
-	// kinds come to about 51 MB.
+	// Research mode keeps 4 seconds before + 11 seconds after an event.
+	// Only the owner's opt-in marker enables the longer, higher-storage recordings.
+	researchClipSeconds = 15
+	researchPostSeconds = researchClipSeconds - clipSeconds
+	// Avoid unbounded memory use if the engine emits a storm of near misses.
+	maxLongCaptures = 8
+
+	// clipsKept is how many of each kind are kept, the oldest going first: at 128 kB a default
+	// clip, four kinds come to about 51 MB (about 192 MB at 15 seconds).
 	clipsKept = 100
 
 	// clipsPerPage is how many clips one wake_clips answer lists. Four hundred would not fit in one
@@ -89,6 +100,10 @@ type clip struct {
 	model        string
 	peak, cutoff float64
 	pcm          []int16
+	postLeft     int    // remaining samples after the scoring moment; zero in ordinary 4-second mode
+	resolved     bool   // wake classification complete, or a near miss
+	long         bool   // enabled 15-second study recording, for metadata only
+	mode         string // frontend that actually supplied mono PCM at wake time
 }
 
 // clips is the recorder. frame runs on the audio path with the engine's lock held, so it only copies.
@@ -104,6 +119,10 @@ type clips struct {
 	// pending are the wakes of the last mistakeWithin, until their turn says they were a mistake or
 	// that time passes. More than one: a wake heard again while its turn listens is part of that turn.
 	pending []*clip
+	// collecting receives post-wake PCM in the opt-in 15-second research mode.
+	// Classification and post capture may finish in either order.
+	collecting  []*clip
+	postSamples int // 0 in the unmodified four-second default
 
 	// quietUntil is the end of the four seconds after the stop word was heard, or a call or a talk
 	// started or ended.
@@ -115,15 +134,16 @@ type clips struct {
 	// room is held through roomChanged, so the last to look at the room is the last to set held.
 	room sync.Mutex
 
-	dir      string
-	keep     int                         // of each kind: clipsKept, fewer in tests
-	shortest int                         // the least a clip holds: clipShortest, none in tests
-	blocked  func() bool                 // something else has the room: see clipsBlocked
-	model    func(slot int) string       // the slot's model id
-	cutoff   func(slot int) float64      // the slot's threshold, for a near miss
-	now      func() time.Time            // replaced in tests
-	after    func(time.Duration, func()) // time.AfterFunc; replaced in tests
-	save     func(clip)                  // writes off the caller's goroutine; replaced in tests
+	dir       string
+	keep      int                         // of each kind: clipsKept, fewer in tests
+	shortest  int                         // the least a clip holds: clipShortest, none in tests
+	blocked   func() bool                 // something else has the room: see clipsBlocked
+	processor func() string               // reports the actual mono PCM frontend
+	model     func(slot int) string       // the slot's model id
+	cutoff    func(slot int) float64      // the slot's threshold, for a near miss
+	now       func() time.Time            // replaced in tests
+	after     func(time.Duration, func()) // time.AfterFunc; replaced in tests
+	save      func(clip)                  // writes off the caller's goroutine; replaced in tests
 
 	// counts is how many clips of each kind are on the device, for the Wake clips sensors: counted from
 	// the folders once at the start, then kept as clips are written, pruned and purged. Its own lock,
@@ -145,6 +165,11 @@ func newClips(dir string) *clips {
 		now: time.Now, after: func(d time.Duration, f func()) { time.AfterFunc(d, f) },
 		counts: map[string]int{}}
 	c.save = func(cl clip) { safe.Go("wake clip", func() { c.write(cl) }) }
+	if _, err := os.Stat(filepath.Join(layout.StateDir, "wake-clip-15s.enabled")); err == nil {
+		c.postSamples = researchPostSeconds * clipRate
+		slog.Info("wake clips: extended research capture enabled", "seconds", researchClipSeconds,
+			"pre_seconds", clipSeconds, "post_seconds", researchPostSeconds)
+	}
 	return c
 }
 
@@ -157,6 +182,7 @@ func startClips(e *Engine, publish func(total int, kinds string)) *clips {
 		m, _ := e.Loaded(slot)
 		return m.ID
 	}
+	c.processor = e.source.ProcessingMode
 	c.cutoff = func(slot int) float64 {
 		if e.Threshold == nil {
 			return 0
@@ -208,6 +234,7 @@ func (c *clips) roomChanged() {
 	defer c.mu.Unlock()
 	c.held.Store(busy)
 	c.reset()
+	c.cancelLong()
 	c.quietUntil = c.now().Add(clipSeconds * time.Second)
 }
 
@@ -228,6 +255,7 @@ func (c *clips) enable(on bool) {
 func (c *clips) purge() {
 	c.mu.Lock()
 	c.pending = nil
+	c.cancelLong()
 	c.reset()
 	c.mu.Unlock()
 	c.disk.Lock()
@@ -297,6 +325,7 @@ func (c *clips) allowed(slot int) bool {
 	now := c.now()
 	if slot >= wakeword.Slots {
 		c.quietUntil = now.Add(clipSeconds * time.Second)
+		c.cancelLong()
 	}
 	if ok && now.After(c.quietUntil) {
 		return true
@@ -312,6 +341,11 @@ func (c *clips) frame(f []int16) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	// Capture the *following* command and background TV, not just the wake
+	// prefix. Never block ALSA or the wake model on a file write.
+	if c.postSamples > 0 && len(c.collecting) > 0 {
+		c.collectPost(f)
+	}
 	for len(f) > 0 {
 		n := copy(c.ring[c.next:], f)
 		f = f[n:]
@@ -319,6 +353,67 @@ func (c *clips) frame(f []int16) {
 		if c.next == len(c.ring) {
 			c.next, c.full = 0, true
 		}
+	}
+}
+
+// collectPost appends live 16-kHz speech frames to each outstanding experiment.
+// Called under mu on the wake engine's audio path. The standard path remains
+// unmodified if the owner has not enabled the long-clip marker.
+func (c *clips) collectPost(frame []int16) {
+	c.collecting = slices.DeleteFunc(c.collecting, func(cl *clip) bool {
+		n := min(len(frame), cl.postLeft)
+		cl.pcm = append(cl.pcm, frame[:n]...)
+		cl.postLeft -= n
+		if cl.postLeft > 0 {
+			return false
+		}
+		if cl.resolved {
+			c.save(*cl)
+		}
+		return true
+	})
+}
+
+// processingMode is captured at the event so a later restart cannot relabel it.
+func (c *clips) processingMode() string {
+	if c.processor != nil {
+		return c.processor()
+	}
+	return ""
+}
+
+// startPost starts a bounded continuation of a pre-wake clip.
+// Overflow is explicit: keep the usual short pre-event clip rather than
+// allocating unbounded memory during a storm of false detections.
+func (c *clips) startPost(cl *clip) {
+	if c.postSamples <= 0 || len(c.collecting) >= maxLongCaptures {
+		return
+	}
+	cl.long = true
+	cl.postLeft = c.postSamples
+	cl.pcm = append(make([]int16, 0, len(cl.pcm)+c.postSamples), cl.pcm...)
+	c.collecting = append(c.collecting, cl)
+}
+
+// resolve writes immediately only if the post-event capture is complete.
+func (c *clips) resolve(cl *clip) {
+	cl.resolved = true
+	if cl.postLeft == 0 {
+		c.save(*cl)
+	}
+}
+
+// cancelLong discards unfinished microphone captures on mute, phone/intercom,
+// stop-word or recorder disable. Pending timeouts must not persist them later.
+func (c *clips) cancelLong() {
+	if c.postSamples == 0 {
+		return
+	}
+	if len(c.collecting) > 0 {
+		c.pending = slices.DeleteFunc(c.pending, func(p *clip) bool {
+			return p.postLeft > 0
+		})
+		c.collecting = nil
 	}
 }
 
@@ -331,6 +426,7 @@ func (c *clips) muted(on bool) {
 	if on {
 		c.mu.Lock()
 		c.reset()
+		c.cancelLong()
 		c.mu.Unlock()
 	}
 }
@@ -358,7 +454,8 @@ func (c *clips) scored(slot int, peak, cutoff float64) {
 	if c.short() {
 		return
 	}
-	cl := &clip{kind: "wake", at: c.now(), slot: slot, model: model, peak: peak, cutoff: cutoff, pcm: c.snapshot()}
+	cl := &clip{kind: "wake", at: c.now(), slot: slot, model: model, peak: peak, cutoff: cutoff, pcm: c.snapshot(), mode: c.processingMode()}
+	c.startPost(cl)
 	c.pending = append(c.pending, cl)
 	c.after(mistakeWithin, func() {
 		c.mu.Lock()
@@ -377,7 +474,7 @@ func (c *clips) take(which func(*clip) bool, kind string) {
 		if kind != "" {
 			p.kind = kind
 		}
-		c.save(*p)
+		c.resolve(p)
 		return true
 	})
 }
@@ -410,19 +507,24 @@ func (c *clips) nearMiss(slot int, peak float64) {
 	if c.short() {
 		return
 	}
-	c.save(clip{kind: "nearmiss", at: c.now(), slot: slot, model: model, peak: peak, cutoff: cutoff, pcm: c.snapshot()})
+	cl := &clip{kind: "nearmiss", at: c.now(), slot: slot, model: model, peak: peak,
+		cutoff: cutoff, pcm: c.snapshot(), mode: c.processingMode()}
+	c.startPost(cl)
+	c.resolve(cl)
 }
 
 // clipMeta is what is known about a clip: its sidecar, and one entry of what wake_clips answers.
 type clipMeta struct {
 	// ID is how wake_clip_audio asks for it, "kind/name". Not stored: it is where the file is.
-	ID     string  `json:"id,omitempty"`
-	Kind   string  `json:"kind"`
-	At     string  `json:"at"`   // UTC, RFC 3339
-	Slot   int     `json:"slot"` // 1 or 2, the assistant
-	Model  string  `json:"model"`
-	Score  float64 `json:"score"`
-	Cutoff float64 `json:"cutoff"`
+	ID              string  `json:"id,omitempty"`
+	Kind            string  `json:"kind"`
+	At              string  `json:"at"`   // UTC, RFC 3339
+	Slot            int     `json:"slot"` // 1 or 2, the assistant
+	Model           string  `json:"model"`
+	Score           float64 `json:"score"`
+	Cutoff          float64 `json:"cutoff"`
+	DurationSeconds float64 `json:"duration_seconds,omitempty"`
+	ProcessingMode  string  `json:"processing_mode,omitempty"`
 }
 
 // write puts a clip on the device, with its sidecar, and lets the oldest of its kind go. The name
@@ -438,8 +540,13 @@ func (c *clips) write(cl clip) {
 		name += fmt.Sprintf("-c%.2f", cl.cutoff)
 	}
 	path := filepath.Join(dir, name+".wav")
+	duration := float64(0)
+	if cl.long {
+		duration = float64(len(cl.pcm)) / clipRate
+	}
 	meta, _ := json.Marshal(clipMeta{Kind: cl.kind, At: cl.at.UTC().Format(time.RFC3339), Slot: cl.slot + 1,
-		Model: cl.model, Score: round3(cl.peak), Cutoff: round3(cl.cutoff)})
+		Model: cl.model, Score: round3(cl.peak), Cutoff: round3(cl.cutoff),
+		DurationSeconds: duration, ProcessingMode: cl.mode})
 	// disk from before the switch is looked at: turned off before this, the folders the purge took away
 	// are not made again; turned off after, the purge waits for disk and takes this clip with the rest.
 	c.disk.Lock()

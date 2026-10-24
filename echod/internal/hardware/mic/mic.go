@@ -62,6 +62,8 @@ type Source struct {
 	// rewiring says the next read failure is the handover in Rewire rather than a fault, so Run can
 	// ask for a restart instead of reporting a crash. See the comment on service.ErrRestart.
 	rewiring atomic.Bool
+	// The actual mono frontend used for the most recent processed frame.
+	factoryProcessing atomic.Bool
 
 	history history
 
@@ -358,6 +360,15 @@ func (s *Source) Run(ctx context.Context) error {
 	}
 }
 
+// ProcessingMode reports which frontend supplied the PCM sent to wake/STT.
+// This is observed from actual frames, not inferred from a requested mode flag.
+func (s *Source) ProcessingMode() string {
+	if s.factoryProcessing.Load() {
+		return "factory_asp"
+	}
+	return "techo5"
+}
+
 // dropReport is how often a listener losing frames is said out loud. Nothing is logged while nothing
 // is being lost.
 const dropReport = 30 * time.Second
@@ -382,6 +393,7 @@ func (s *Source) reportDrops() {
 func (s *Source) broadcast(raw []byte) { s.broadcastWithFactory(raw, nil) }
 
 func (s *Source) broadcastWithFactory(raw []byte, factory []int16) {
+	s.factoryProcessing.Store(factory != nil)
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
