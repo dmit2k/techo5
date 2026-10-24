@@ -14,13 +14,13 @@ This source branch starts from the **unaltered official upstream v1.6.0 commit `
 With owner authorization, use the established backup/rollback and application installation procedure for a build produced from this branch. **No original Amazon binaries are needed.** The feature is disabled unless the following marker exists before startup:
 
 ```sh
-touch /data/techo5-linux/wake-clip-15s.enabled
+touch /data/misc/techo5/wake-clip-15s.enabled
 ```
 
 The ordinary Home Assistant `Keep wake clips` setting must also be ON. A daemon restart through the supported mechanism is required to read the marker. To return to 4-second clips, delete the marker and restart the instrumented daemon:
 
 ```sh
-rm -- /data/techo5-linux/wake-clip-15s.enabled
+rm -- /data/misc/techo5/wake-clip-15s.enabled
 ```
 
 **Disabling `Keep wake clips` deletes retained wake clips.** Keep private files in an authorized owner-local location, not GitHub. Fully populated 15-second WAV retention at 100 clips × 4 categories uses about 192 MB; check free space.
