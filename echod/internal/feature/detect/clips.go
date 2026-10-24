@@ -5,7 +5,7 @@ package detect
 //
 // Normally the preceding four seconds are kept. Owner-local research can enable
 // 15-second clips (four seconds before + eleven after each wake/near miss) by placing
-// /data/techo5-linux/wake-clip-15s.enabled before starting echod. Both factory and
+// /data/misc/techo5/wake-clip-15s.enabled before starting echod. Both factory and
 // standard speech paths feed the identical post-processing recorder.
 // The last few seconds the detector heard are kept in memory while it is on, and three moments save
 // them to the device as 16 kHz mono WAVE files under layout.WakeClipDir:
