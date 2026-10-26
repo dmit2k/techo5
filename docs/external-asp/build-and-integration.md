@@ -1,6 +1,6 @@
 # External ASP — build, integration and acceptance guide
 
-> **Draft / not a deployment guide.** The generic ASP host is being developed and tested in isolated experimental branches. The optional Go build-tag boundary is **not defined or implemented as a stable release contract**. This file deliberately does not provide fabricated `go build -tags ...` commands.
+> **Draft / not a deployment guide.** P3-3A.1 low-latency handoff has [offline acceptance](validation-p3-3a1.md), but the generic ASP host remains experimental and unqualified on physical hardware. The implementation is in isolated experimental branches. The optional Go build-tag boundary is **not defined or implemented as a stable release contract**. This file deliberately does not provide fabricated `go build -tags ...` commands.
 
 ## Intended packaging
 
