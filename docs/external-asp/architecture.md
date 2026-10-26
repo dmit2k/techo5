@@ -1,6 +1,6 @@
 # External ASP Frontend — architecture and design trade-offs
 
-> **Status:** experimental design, not an upstream feature or a hardware-qualified release. This document describes the intended generic interface and the offline-tested P3-2/P3-3A implementation. A later low-latency handoff revision (P3-3A.1), factory integration, build-tag packaging and device acceptance remain separate review gates.
+> **Status:** experimental design, not an upstream feature or a hardware-qualified release. This document describes the generic P3-2/P3-3A interface and the P3-3A.1 low-latency handoff, **offline accepted only**. Factory integration, build-tag packaging and device acceptance remain separate review gates. See [P3-3A.1 validation](validation-p3-3a1.md).
 
 ## Goals and non-goals
 
@@ -111,9 +111,9 @@ The synthetic DSP-shaped adapter implements a bounded sample-preserving FIFO and
 Two handoff policies have been studied:
 
 - **Full cross-processor sample continuity (P3-3A baseline):** a one-tick publication pause and persistent delayed stock shadow. This avoids an origin discontinuity but introduced an approximately 40-ms publication interval and permanently delayed future Built-in playback to the voice pipeline.
-- **Low-latency-first (P3-3A.1 revision under qualification):** publish current stock on *every* capture tick, including preflight and failure. Activate a valid delayed external frame without an intentional publication pause. Permit a **single bounded overlap of at most 320 input-time samples at Built-in→External**, or a **single skip at External→Built-in**, but never corrupt the continuous sequence within one healthy external run. The stock path returns immediately to current-tick PCM, with no sticky delay.
+- **Low-latency-first (P3-3A.1 offline accepted, not hardware-qualified):** publish current stock on *every* capture tick, including preflight and failure. Activate a valid delayed external frame without an intentional publication pause. Permit a **single bounded overlap of at most 320 input-time samples at Built-in→External**, or a **single skip at External→Built-in**, but never corrupt the continuous sequence within one healthy external run. The stock path returns immediately to current-tick PCM, with no sticky delay.
 
-An overlap or skip of *source-time identity at a processor boundary* is distinct from duplicated byte blocks within the external DSP stream. This is an explicit streaming-latency trade-off, not lossless file conversion. The low-latency revision must pass its final regression before being called stable.
+An overlap or skip of *source-time identity at a processor boundary* is distinct from duplicated byte blocks within the external DSP stream. This is an explicit streaming-latency trade-off, not lossless file conversion. The low-latency revision passed offline acceptance through 33 canonical PASS receipts on the same code revision (25 original PASS + 8 reruns); the original Spot scheduling-related 25-ms deadline failure remains preserved and hardware scheduling has not been qualified. It is not a stable production release.
 
 Neither policy removes the DSP's own internal group delay. `pcmStartSample` identifies a position in the input timeline, not a measured acoustic end-to-end latency.
 
@@ -139,6 +139,6 @@ The generic host design and synthetic conformance fixtures are separable from an
 
 The prospective upstream contribution is the **generic, opt-in TECHO5 ASP host interface**: capture descriptor, process lifecycle, bounded ASP2 protocol, status/control, fallback and sample publication. Vendor-specific geometry, maps, calibration and runtime belong to independently supplied helpers.
 
-Outstanding acceptance gates include the final low-latency handoff regression, real factory bridge (a distinct follow-on stage), acoustic and realtime device qualification, privacy/mute review, protocol stabilization and a decision on optional Go build tags. No tag is assumed to exist; see [Build and integration](build-and-integration.md).
+Outstanding acceptance gates include the real factory bridge (a distinct follow-on stage), acoustic and realtime device qualification, privacy/mute review, protocol stabilization and a decision on optional Go build tags. No tag is assumed to exist; see [Build and integration](build-and-integration.md).
 
 The standalone protocol documentation is a **design contract for review**, not a guarantee of plugin ABI compatibility across unreleased revisions.
