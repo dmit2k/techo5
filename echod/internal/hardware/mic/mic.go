@@ -64,6 +64,7 @@ type Source struct {
 	// ask for a restart instead of reporting a crash. See the comment on service.ErrRestart.
 	rewiring atomic.Bool
 
+	aspControl
 	history history
 
 	// mixer is read by the reader and replaced from Home Assistant, both under mu.
@@ -121,15 +122,16 @@ func (s *Source) Mixing() config.Mixing {
 func New() *Source {
 	mixer, mixing := NewMixer(config.Get().Microphone.Mixing)
 	s := &Source{
-		listeners: map[int]*listener{},
-		raw:       map[int]chan []byte{},
-		mixer:     mixer,
-		mixing:    mixing,
-		leveler:   newLeveler(),
-		finder:    NewBeamformer(),
-		cancel:    newCanceller(),
-		canceling: config.Get().Microphone.Cancel,
-		denoiser:  denoise.NewStream(Rate),
+		aspControl: aspControl{aspChanged: make(chan struct{}, 1)},
+		listeners:  map[int]*listener{},
+		raw:        map[int]chan []byte{},
+		mixer:      mixer,
+		mixing:     mixing,
+		leveler:    newLeveler(),
+		finder:     NewBeamformer(),
+		cancel:     newCanceller(),
+		canceling:  config.Get().Microphone.Cancel,
+		denoiser:   denoise.NewStream(Rate),
 	}
 	s.finder.hold = 1
 	s.facing.Store(-1)
@@ -323,6 +325,8 @@ func (s *Source) Run(ctx context.Context) error {
 	if pcm == nil {
 		return errors.New("mic: the capture device is not held")
 	}
+	s.beginASPCapture()
+	defer s.closeASP()
 	raw := make([]byte, FrameSamples*Channels*Bits/8)
 
 	var overruns uint64
@@ -355,7 +359,11 @@ func (s *Source) Run(ctx context.Context) error {
 			}
 			return err
 		}
-		s.broadcast(raw[:n])
+		var native nativeFrame
+		if c, ok := pcm.(interface{ nativeInput() nativeFrame }); ok {
+			native = c.nativeInput()
+		}
+		s.broadcastNative(raw[:n], native)
 	}
 }
 
@@ -380,7 +388,14 @@ func (s *Source) reportDrops() {
 
 // broadcast hands the frame to every listener, dropping it for any that is behind. The mono mix is
 // only computed when something wants it.
-func (s *Source) broadcast(raw []byte) {
+func (s *Source) broadcast(raw []byte) { s.broadcastNative(raw, nativeFrame{}) }
+
+func (s *Source) broadcastNative(raw []byte, native nativeFrame) {
+	// Native pipes may wait, but never hold the stock/history/subscription lock.
+	result := s.processASP(native)
+	if result.child != nil {
+		defer s.retireASP(result)
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -457,16 +472,23 @@ func (s *Source) broadcast(raw []byte) {
 		}
 	}
 	s.wasLeveling = on
-	s.remember(frame)
-	spectrum.Mic.Push(frame)
+	// The short control lock covers the actual publication boundary, not helper I/O.
+	s.aspMu.Lock()
+	defer s.aspMu.Unlock()
+	frame = s.chooseASP(frame, result)
+	if frame != nil {
+		s.remember(frame)
+		spectrum.Mic.Push(frame)
 
-	for _, l := range s.listeners {
-		select {
-		case l.ch <- frame:
-		default:
-			l.dropped++
-			s.dropped.Add(1)
+		for _, l := range s.listeners {
+			select {
+			case l.ch <- frame:
+			default:
+				l.dropped++
+				s.dropped.Add(1)
+			}
 		}
+
 	}
 
 	if len(s.raw) == 0 {
@@ -495,6 +517,7 @@ func (s *Source) Dropped() uint64 {
 // Close lets the device go. The Source stays usable and its listeners stay subscribed: Start can take
 // the hardware again, which is how a restart works.
 func (s *Source) Close() error {
+	s.closeASP()
 	s.devMu.Lock()
 	pcm := s.pcm
 	s.pcm = nil

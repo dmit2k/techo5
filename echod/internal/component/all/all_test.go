@@ -21,6 +21,9 @@ func init() { speaker.GainPossible = func() bool { return false } }
 // deliberately when that happens. What it catches is a component that stopped registering — which
 // costs nothing at build time and shows up as an entity quietly missing from Home Assistant.
 var registered = []string{
+	"microphone_asp",
+	"active_asp",
+	"asp_debug",
 	"alarm_snooze",
 	"alarm_snooze_length",
 	"alarm_sound",
