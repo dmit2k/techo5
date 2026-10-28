@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/HuskerMinion/techo5/echod/internal/asp"
 	"log/slog"
 	"math"
 	"os"
@@ -320,6 +321,7 @@ type pairedCapture struct {
 	// micRate is the rate the microphones were opened at (athenaKernel.micRates).
 	micRate int
 
+	native         nativeFrame // borrowed until the next Read; convert only reads these bytes
 	micBuf, refBuf []byte
 	micDec         []*audio.Decimator
 	refDec         [athenaRefChannels]*audio.Decimator
@@ -513,6 +515,7 @@ func (c *pairedCapture) restart() error {
 // Read fills buf with whole 16 kHz frames in the 1st gen Show 8's layout. An overrun on either device
 // starts both over and is reported as alsa.ErrOverrun, as a single device's is.
 func (c *pairedCapture) Read(buf []byte) (int, error) {
+	c.native = nativeFrame{}
 	frameBytes := Channels * Bits / 8
 	frames := len(buf) / frameBytes
 	if frames == 0 {
@@ -543,12 +546,52 @@ func (c *pairedCapture) Read(buf []byte) (int, error) {
 	} else if c.k.softRef {
 		c.softFill(frames)
 	}
+	c.retainNative(c.micBuf[:micBytes], ref)
 	c.convert(buf[:frames*frameBytes], c.micBuf[:micBytes], ref)
 	c.got += uint64(frames)
 	c.meter.frames += frames
 	c.meter.report()
 	return frames * frameBytes, nil
 }
+
+// retainNative borrows exactly this Read's buffers before downsampling. Software reference and
+// other paired-capture boards/rates cannot supply this asp's native format.
+func (c *pairedCapture) retainNative(mics, ref []byte) {
+	c.native = nativeFrame{}
+	if c.ref == nil || c.micRate != 96000 || c.k.refRate != 96000 || c.k.micChannels != 4 {
+		return
+	}
+	var bits uint32
+	switch c.k.micFull {
+	case 1 << 23:
+		bits = 23
+	case 1 << 31:
+		bits = 31
+	default:
+		return
+	}
+	n := nativeFrame{mics: mics, ref: ref, fullBits: bits}
+	if n.valid() {
+		c.native = n
+	}
+}
+
+// aspConfig is queried only by the startup worker, never from PCM exchange.
+// These capture settings are immutable after opening.
+func (c *pairedCapture) aspConfig() asp.Config {
+	if c.ref == nil || c.micRate != 96000 || c.k.refRate != 96000 || c.k.micChannels != 4 {
+		return asp.Config{}
+	}
+	switch c.k.micFull {
+	case 1 << 23:
+		return nativeASPConfig(23)
+	case 1 << 31:
+		return nativeASPConfig(31)
+	}
+	return asp.Config{}
+}
+
+func (c *pairedCapture) nativeInput() nativeFrame { return c.native }
 
 // micDelay is the microphones' decimator delay: a frame out of it is the input from this far back.
 // Nothing at Rate, where the converter decimates (its own filter's delay is not counted: `techo5 echo`

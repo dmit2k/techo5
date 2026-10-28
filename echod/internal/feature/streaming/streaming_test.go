@@ -744,8 +744,8 @@ func TestShairportConfAirPlay2(t *testing.T) {
 	if !strings.Contains(c, `service_type = "airplay2";`) {
 		t.Errorf("conf is not AirPlay 2 only:\n%s", c)
 	}
-	if airplay2Offset >= 0 {
-		t.Errorf("airplay2Offset %v is not earlier", airplay2Offset)
+	if want := fmt.Sprintf("audio_backend_buffer_desired_length_in_seconds = %.3f;", airplayLead.Seconds()); !strings.Contains(c, want) {
+		t.Errorf("conf without %s:\n%s", want, c)
 	}
 	if want := fmt.Sprintf("audio_backend_latency_offset_in_seconds = %.3f;", airplay2Offset.Seconds()); !strings.Contains(c, want) {
 		t.Errorf("conf without %s:\n%s", want, c)
@@ -786,6 +786,23 @@ func TestTheAirPlay2Switch(t *testing.T) {
 	if why := airplay2Missing(); why != "AirPlay 2 is turned off" {
 		t.Errorf("turned off, AirPlay 2 is missing for %q", why)
 	}
+
+	// On again, but the firewall could not let it in: classic.
+	if err := config.Set().Streaming().AirPlayClassic(false); err != nil {
+		t.Fatal(err)
+	}
+	wasNo := noAirPlay2
+	t.Cleanup(func() { noAirPlay2 = wasNo })
+	noAirPlay2 = filepath.Join(dir, "no-airplay2")
+	if why := airplay2Missing(); strings.Contains(why, "firewall") {
+		t.Errorf("no marker, but %q", why)
+	}
+	if err := os.WriteFile(noAirPlay2, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if why := airplay2Missing(); !strings.Contains(why, "firewall") {
+		t.Errorf("with the firewall's marker, AirPlay 2 is missing for %q", why)
+	}
 }
 
 // nqptp drops root for the receivers' user where there is one, and stays as it is where there is none.
@@ -795,6 +812,27 @@ func TestNqptpDropsRoot(t *testing.T) {
 	}
 	if got := nqptpArgs(nil); got != nil {
 		t.Errorf("nqptp's arguments without one: %q", got)
+	}
+}
+
+// The AirPlay 2 receiver is told how much is still to be heard: a line of nanoseconds pending and the wall
+// clock it was true at, rewritten at the front, which shairport-sync's stdout backend reads (our patch).
+func TestAirPlayPendingIsWritten(t *testing.T) {
+	f, err := os.Create(filepath.Join(t.TempDir(), "pending"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	airplayPending(time.Second) // no receiver running: nothing, and no panic
+	airplayPendingOut.Store(f)
+	t.Cleanup(func() { airplayPendingOut.Store(nil) })
+	airplayPending(2 * time.Second)
+	airplayPending(250 * time.Millisecond)
+	b, _ := os.ReadFile(f.Name())
+	var pending, at int64
+	if n, _ := fmt.Sscanf(string(b), "%d %d", &pending, &at); n != 2 || pending != int64(250*time.Millisecond) ||
+		time.Since(time.Unix(0, at)) > time.Minute || strings.Count(string(b), "\n") != 1 {
+		t.Errorf("pending file %q", b)
 	}
 }
 
@@ -1080,12 +1118,17 @@ type fakeGroup struct {
 func newFakeGroup(t *testing.T) *fakeGroup {
 	wasRun, wasUp, wasAir, wasSpot, wasFirst, wasLeft := runAvahi, avahiUp, runAirPlay, runSpotify, restartFirst, leftovers
 	wasEvery, wasMisses, wasAnswered, wasCanAsk, wasPaused := answerEvery, answerMisses, answered, canAsk, pausedFor
+	wasNever, wasNeverTries := neverHeardAfter, neverHeardTries
 	t.Cleanup(func() {
 		runAvahi, avahiUp, runAirPlay, runSpotify, restartFirst, leftovers = wasRun, wasUp, wasAir, wasSpot, wasFirst, wasLeft
 		answerEvery, answerMisses, answered, canAsk, pausedFor = wasEvery, wasMisses, wasAnswered, wasCanAsk, wasPaused
+		neverHeardAfter, neverHeardTries = wasNever, wasNeverTries
 		receivedAt.Store(0)
+		neverHeardUsed.Store(0)
 	})
 	receivedAt.Store(0)
+	neverHeardUsed.Store(0)
+	neverHeardAfter, neverHeardTries = 4, 2
 	g := &fakeGroup{answering: true}
 	leftovers = func() {}
 	restartFirst = 10 * time.Millisecond
@@ -1163,16 +1206,31 @@ func TestNoRouteIsNoMiss(t *testing.T) {
 	}
 }
 
-// An avahi that has never answered the ask since it started is never restarted for it: the ask proves
-// nothing there.
-func TestAnAvahiNeverHeardIsLeftBe(t *testing.T) {
+// An avahi that has never answered the ask since it started is started again, but only neverHeardTries
+// times in a row: where avahi cannot answer the ask, it then stands down (techo5-dot#22).
+func TestAnAvahiNeverHeardIsTriedAFewTimes(t *testing.T) {
 	g := newFakeGroup(t)
 	g.answer(false)
 	g.run(t)
-	waitUntil(t, func() bool { _, _, asks := g.counts(); return asks >= 8 })
-	if n, _, _ := g.counts(); n != 1 {
-		t.Errorf("avahi started %d times; want 1", n)
+	waitUntil(t, func() bool { n, a, _ := g.counts(); return n == 3 && a == 3 })
+	_, _, at := g.counts()
+	waitUntil(t, func() bool { _, _, asks := g.counts(); return asks >= at+3*neverHeardAfter })
+	if n, _, _ := g.counts(); n != 3 {
+		t.Errorf("avahi started %d times; want 3 (the first and %d tries)", n, neverHeardTries)
 	}
+}
+
+// An answer resets the tries: an avahi that answered once and later comes up silent is tried again.
+func TestAnAnswerResetsTheNeverHeardTries(t *testing.T) {
+	g := newFakeGroup(t)
+	g.answer(false)
+	g.run(t)
+	waitUntil(t, func() bool { n, _, _ := g.counts(); return n == 2 })
+	g.answer(true)
+	waitUntil(t, func() bool { return neverHeardUsed.Load() == 0 })
+	g.answer(false)
+	// The quiet one is restarted for its misses, then the new silent ones get their tries again.
+	waitUntil(t, func() bool { n, _, _ := g.counts(); return n == 5 })
 }
 
 // Nothing is restarted while a receiver sends audio, which a restart would cut off; once it stops, the

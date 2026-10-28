@@ -22,6 +22,9 @@ type Microphone struct {
 	// process where the image has it.
 	CancelEngine CancelEngine `json:"cancel_engine,omitempty"`
 
+	// ASP selects the full microphone processing path, independently of echo cancellation.
+	ASP ASPMode `json:"asp"`
+
 	// Sensitivity is how far over the room's own floor, in dB, counts as something happening. Lower
 	// notices a chair being moved; higher waits for someone to speak.
 	Sensitivity int `json:"sensitivity"`
@@ -60,6 +63,7 @@ const (
 	// wake word was markedly harder to catch with it; the linear filter leaves the voice alone.
 	// WebRTC stays a choice for when a clean recording matters more than the wake word.
 	DefaultCancelEngine = CancelBuiltin
+	DefaultMicASP       = ASPBuiltin
 
 	// Measured on a quiet room: 0.8 dB at the 99th percentile of frames, so this is well clear of the
 	// room itself and is really about brief small sounds — a chair, a keyboard.
@@ -77,6 +81,7 @@ func defaultMicrophone() Microphone {
 		Mixing:       DefaultMixing,
 		Cancel:       DefaultCancel,
 		CancelEngine: DefaultCancelEngine,
+		ASP:          DefaultMicASP,
 		Sensitivity:  DefaultSensitivity,
 		Denoise:      DefaultDenoise,
 	}
@@ -194,4 +199,25 @@ func (m Mixing) Label() string {
 		return "Beamformer"
 	}
 	return string(m)
+}
+
+// ASPMode is the full microphone processing path.
+type ASPMode string
+
+const (
+	ASPBuiltin  ASPMode = "builtin"
+	ASPExternal ASPMode = "external"
+)
+
+func ASPModes() []ASPMode { return []ASPMode{ASPBuiltin, ASPExternal} }
+
+func (m ASPMode) Label() string {
+	if m == ASPExternal {
+		return "External"
+	}
+	return "Built-in"
+}
+
+func (w MicrophoneWriter) ASP(v ASPMode) error {
+	return w.st.Update(func(c *Config) { c.Microphone.ASP = v })
 }

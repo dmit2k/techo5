@@ -21,14 +21,19 @@ func init() {
 // sub-device as a device of its own, which would put a bare "Microphone" device in the list for
 // every satellite in the house.
 type Microphone struct {
-	mixing      *esphome.Select
-	gain        *esphome.Number
-	leveling    *esphome.Switch
-	cancel      *esphome.Switch
-	engine      *esphome.Select
-	denoise     *esphome.Switch
-	ends        *esphome.Switch
-	sensitivity *esphome.Number
+	aspMu               sync.Mutex
+	aspSource           aspSource
+	aspHave             bool
+	asp                 *esphome.Select
+	activeASP, aspDebug *esphome.TextSensor
+	mixing              *esphome.Select
+	gain                *esphome.Number
+	leveling            *esphome.Switch
+	cancel              *esphome.Switch
+	engine              *esphome.Select
+	denoise             *esphome.Switch
+	ends                *esphome.Switch
+	sensitivity         *esphome.Number
 }
 
 var (
@@ -121,6 +126,7 @@ func build() *Microphone {
 	}
 
 	source := mic.Get()
+	m.bindASP(source, mic.HaveExternalASP())
 	component.Bind(m.mixing, mic.Mixings(), source.SetMixing, config.Set().Microphone().Mixing)
 	engines := config.CancelEngines()
 	if !mic.HaveWebRTC() {
@@ -180,7 +186,7 @@ func build() *Microphone {
 func (m *Microphone) Name() string { return "microphone settings" }
 
 func (m *Microphone) Entities() []esphome.Entity {
-	return append([]esphome.Entity{m.mixing, m.gain, m.leveling, m.cancel, m.engine, m.denoise, m.ends, m.sensitivity},
+	return append([]esphome.Entity{m.asp, m.activeASP, m.aspDebug, m.mixing, m.gain, m.leveling, m.cancel, m.engine, m.denoise, m.ends, m.sensitivity},
 		buildEntities()...)
 }
 
@@ -197,6 +203,7 @@ func setEngine(e config.CancelEngine) config.CancelEngine {
 // it when it opens the device, which is the only moment it can be set.
 func (m *Microphone) Restore(c config.Config) {
 	source := mic.Get()
+	m.restoreASP(c.Microphone.ASP)
 
 	component.Restore(m.mixing, c.Microphone.Mixing, source.SetMixing)
 
