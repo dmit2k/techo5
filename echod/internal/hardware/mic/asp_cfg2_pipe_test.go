@@ -123,7 +123,7 @@ func (p *cfg2Pipe) exchange(t *testing.T, seq uint64, input asp.Input, inChunk i
 	if r.Sequence != seq {
 		t.Fatalf("incorrect sequence: %d != %d", r.Sequence, seq)
 	}
-	t.Logf("RSP2 read=%s; protocol exchange target 25ms, no host realtime assertion", time.Since(start))
+	t.Logf("RSP2 read=%s; independent protocol smoke test, not the host exchange deadline", time.Since(start))
 	return r
 }
 
@@ -421,10 +421,12 @@ func TestSyntheticCFG2PipeLegacyMismatchAndFaults(t *testing.T) {
 			}
 			p.write(t, request.Bytes(), 8192)
 			if mode == "output-hang" {
+				// Deliberately inject a short local read deadline to exercise
+				// io deadline propagation; production host uses 5 seconds.
 				p.readDeadline(25 * time.Millisecond)
 				_, err := asp.ReadReply(p.stdout)
 				if !errors.Is(err, os.ErrDeadlineExceeded) {
-					t.Fatalf("expected 25ms exchange deadline, got %v", err)
+					t.Fatalf("expected injected 25ms read timeout, got %v", err)
 				}
 				return
 			}

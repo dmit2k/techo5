@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -196,9 +196,12 @@ func TestASPControlStartupFailuresAndBootKeep(t *testing.T) {
 					}
 					s.broadcastNative(rawFrame(0, false), n)
 				}
-				st := waitASP(t, s, func(st ASPStatus) bool { return strings.HasPrefix(st.Debug, "H:500:Fallback:") })
-				want := map[string]string{"missing": errASPNotFound.Error(), "start": errASPStart.Error(), "handshake": errASPHandshake.Error(), "malformed": errASPInvalid.Error(), "none": errASPTimeout.Error(), "reference": errASPReference.Error()}[kind]
-				if st.Debug != "H:500:Fallback: "+want || st.Active != config.ASPBuiltin || st.Confirmed || st.Selected != saved {
+				// Each fallback reason has its own host code, not a generic H:500.
+				codes := map[string]int{"missing": 500, "start": 501, "handshake": 502, "malformed": 507, "none": 504, "reference": 503}
+				want := map[string]string{"missing": errASPNotFound.Error(), "start": errASPStart.Error(), "handshake": errASPHandshake.Error(), "malformed": errASPInvalid.Error(), "none": errASPNoPCM.Error(), "reference": errASPReference.Error()}[kind]
+				wantDebug := fmt.Sprintf("H:%03d:Fallback: %s", codes[kind], want)
+				st := waitASP(t, s, func(st ASPStatus) bool { return st.Debug == wantDebug })
+				if st.Debug != wantDebug || st.Active != config.ASPBuiltin || st.Confirmed || st.Selected != saved {
 					t.Fatalf("wrong failure semantics: %+v", st)
 				}
 				if config.Get().Microphone.ASP != saved {
@@ -235,14 +238,14 @@ func TestASPControlRuntimeFaultsCurrentStockNoRetry(t *testing.T) {
 				t.Fatal("failing tick not current stock")
 			}
 			st := s.ASPStatus()
-			reason := errASPExited.Error()
+			reason, code := errASPExited.Error(), 506
 			switch mode {
 			case "output-hang", "input-hang", "short-open":
-				reason = errASPTimeout.Error()
+				reason, code = errASPTimeout.Error(), 505
 			case "short", "length", "sequence", "repeat":
-				reason = errASPInvalid.Error()
+				reason, code = errASPInvalid.Error(), 507
 			}
-			if st.Selected != config.ASPExternal || st.Active != config.ASPBuiltin || !st.Confirmed || st.Debug != "H:500:Fallback: "+reason {
+			if st.Selected != config.ASPExternal || st.Active != config.ASPBuiltin || !st.Confirmed || st.Debug != fmt.Sprintf("H:%03d:Fallback: %s", code, reason) {
 				t.Fatal(st)
 			}
 			for i := 0; i < 5; i++ {
@@ -289,7 +292,7 @@ func TestASPControlNoCaptureBeforeRunAndNoPCMTimeout(t *testing.T) {
 	}
 	s.beginASPCapture()
 	waitASPChild(t, s)
-	st := waitASP(t, s, func(st ASPStatus) bool { return strings.HasPrefix(st.Debug, "H:500:Fallback:") })
+	st := waitASP(t, s, func(st ASPStatus) bool { return st.Debug == "H:504:Fallback: no valid PCM frames received" })
 	if st.Selected != config.ASPExternal || st.Debug != "H:504:Fallback: no valid PCM frames received" {
 		t.Fatal(st)
 	}
@@ -427,12 +430,20 @@ func TestASPControlJitterAndHardDeadline(t *testing.T) {
 	}
 	slices.Sort(durations)
 	t.Logf("jitter ns p50=%d p95=%d p99=%d max=%d budget=%s", durations[50], durations[95], durations[99], durations[99], aspFrameBudget)
-	hard := fixture(t, "delay:60")
-	start := time.Now()
-	if _, err := hard.process(n); !errors.Is(err, errASPTimeout) {
-		t.Fatal("hard stall not terminal", err)
+	// A transient 60ms scheduling stall is not a terminal error.
+	short := fixture(t, "delay:60")
+	if _, err := short.process(n); err != nil || short.broken.Load() {
+		t.Fatal("60ms delay incorrectly triggered fallback", err)
 	}
-	t.Logf("hard deadline elapsed=%s", time.Since(start))
+	hard := fixture(t, "delay:5200")
+	start := time.Now()
+	if _, err := hard.process(n); !errors.Is(err, errASPTimeout) || !hard.broken.Load() {
+		t.Fatal("5s hard stall not terminal", err)
+	}
+	if elapsed := time.Since(start); elapsed < aspFrameBudget-250*time.Millisecond || elapsed > aspFrameBudget+2*time.Second {
+		t.Fatal("unexpected deadline duration", elapsed)
+	}
+	t.Logf("hard deadline elapsed=%s budget=%s", time.Since(start), aspFrameBudget)
 	if _, err := hard.process(n); err == nil {
 		t.Fatal("late response reused")
 	}

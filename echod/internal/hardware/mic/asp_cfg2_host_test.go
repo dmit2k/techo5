@@ -56,7 +56,7 @@ func hostCFG2Fixture(t testing.TB, mode string, c asp.Config, session sessionCFG
 	return f
 }
 
-// Real HELLO/CFG2/ACK2/INP2/RSP2 pipes with the production 25ms deadline.
+// Real HELLO/CFG2/ACK2/INP2/RSP2 pipes with the configured 5s exchange deadline.
 func TestHostCFG2MetadataPCM(t *testing.T) {
 	for _, bits := range []uint32{23, 31} {
 		c := nativePattern(bits, 0).input().Config
@@ -585,19 +585,19 @@ func TestHostCFG2AbsoluteDeadlineDeterministic(t *testing.T) {
 		cost [4]time.Duration
 		fail bool
 	}{
-		{"config-write-hang", [4]time.Duration{26, 0, 0, 0}, true},
-		{"ACK-hang", [4]time.Duration{0, 26, 0, 0}, true},
-		{"input-write-hang", [4]time.Duration{0, 0, 26, 0}, true},
-		{"output-read-hang", [4]time.Duration{0, 0, 0, 26}, true},
-		{"split-cost-no-reset", [4]time.Duration{7, 7, 7, 7}, true},
-		{"partial-IO-within-budget", [4]time.Duration{6, 6, 6, 6}, false},
+		{"config-write-hang", [4]time.Duration{aspFrameBudget + time.Millisecond, 0, 0, 0}, true},
+		{"ACK-hang", [4]time.Duration{0, aspFrameBudget + time.Millisecond, 0, 0}, true},
+		{"input-write-hang", [4]time.Duration{0, 0, aspFrameBudget + time.Millisecond, 0}, true},
+		{"output-read-hang", [4]time.Duration{0, 0, 0, aspFrameBudget + time.Millisecond}, true},
+		{"split-cost-no-reset", [4]time.Duration{aspFrameBudget / 4, aspFrameBudget / 4, aspFrameBudget / 4, aspFrameBudget/4 + time.Millisecond}, true},
+		{"partial-IO-within-budget", [4]time.Duration{aspFrameBudget / 6, aspFrameBudget / 6, aspFrameBudget / 6, aspFrameBudget / 6}, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			c := nativePattern(31, 0).input().Config
 			session := hostCFG2Session(t, c, confirmedFactoryAthena(), nil)
 			clock := &hostCFG2Clock{}
 			for j, v := range tc.cost {
-				clock.cost[j] = v * time.Millisecond
+				clock.cost[j] = v
 			}
 			w := &hostCFG2Writer{c: clock, configBytes: len(session.packet), inputBytes: 20 + nativeMicBytes + nativeRefBytes}
 			var output bytes.Buffer
@@ -619,10 +619,10 @@ func TestHostCFG2AbsoluteDeadlineDeterministic(t *testing.T) {
 				if err != nil || !bytes.Equal(w.wire.Bytes()[:len(session.packet)], session.Bytes()) {
 					t.Fatal("partial CFG2 writes", err)
 				}
-				clock.cost = [4]time.Duration{0, 0, 10 * time.Millisecond, 16 * time.Millisecond}
+				clock.cost = [4]time.Duration{0, 0, aspFrameBudget / 2, aspFrameBudget/2 + time.Millisecond}
 				got, err = f.exchange(nativePattern(31, 1).input())
 				if !errors.Is(err, errASPTimeout) || got.PCM != nil || clock.readDeadlines != 2 || clock.writeDeadlines != 2 {
-					t.Fatal("later exchange not fresh 25ms", err)
+					t.Fatal("later exchange did not enforce a fresh 5s budget", err)
 				}
 			}
 			t.Logf("deterministic total=%s deadline=%s write/read deadline calls=%d/%d terminal=%t", clock.spent, aspFrameBudget, clock.writeDeadlines, clock.readDeadlines, f.broken.Load())
@@ -633,15 +633,26 @@ func TestHostCFG2AbsoluteDeadlineDeterministic(t *testing.T) {
 func TestHostCFG2AbsoluteDeadlineRealPipes(t *testing.T) {
 	c := nativePattern(31, 0).input().Config
 	session := hostCFG2Session(t, c, nil, nil)
-	// Both individual delays fit 25ms; their sum cannot fit the first exchange.
+	// Two 18ms phases must no longer trigger timeout under the 5s budget.
 	f := hostCFG2Fixture(t, "delay:18", c, session, "TECHO5_ASP_CONFIG_DELAY_MS=18")
 	start := time.Now()
 	got, err := f.exchange(nativePattern(31, 0).input())
 	elapsed := time.Since(start)
-	if !errors.Is(err, errASPTimeout) || got.PCM != nil || !f.broken.Load() {
-		t.Fatal("first deadline reset after ACK", err)
+	if err != nil || got.Type != asp.Data || f.broken.Load() {
+		t.Fatal("brief config and reply delays should be tolerated", err, got.Type)
 	}
-	t.Logf("first real config18ms+reply18ms elapsed=%s, enforced budget=25ms; elapsed is scheduler dependent", elapsed)
+	t.Logf("first real config18ms+reply18ms elapsed=%s, configured budget=%s", elapsed, aspFrameBudget)
+	// A blocking configuration write must still be terminated by the single
+	// absolute deadline, including when no ACK or PCM is ever received.
+	hung := hostCFG2Fixture(t, "normal", c, session, "TECHO5_ASP_CONFIG_DELAY_MS=5200")
+	start = time.Now()
+	got, err = hung.exchange(nativePattern(31, 0).input())
+	elapsed = time.Since(start)
+	if !errors.Is(err, errASPTimeout) || got.PCM != nil || !hung.broken.Load() ||
+		elapsed < aspFrameBudget-250*time.Millisecond || elapsed > aspFrameBudget+2*time.Second {
+		t.Fatal("real 5s deadline not enforced", elapsed, err)
+	}
+	t.Logf("real blocked configuration elapsed=%s budget=%s", elapsed, aspFrameBudget)
 }
 
 func TestHostCFG2ControlCancelPipe(t *testing.T) {

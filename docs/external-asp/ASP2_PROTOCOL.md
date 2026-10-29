@@ -1,10 +1,11 @@
 # External ASP2: session configuration and PCM transport (draft protocol revision)
 
-**Status: DESIGN SPECIFICATION ONLY — NOT IMPLEMENTED.** Dated 2026-10-27.
-Protocol identity remains **ASP2**, wire version **2**. This is a one-time
-pre-release incompatible update to the previous fixed 40-byte CFG2.
-Do not use this document to claim that existing TECHO5 or FrankenASP binaries
-already implement these rules. Rebuild and test all participants together.
+**Status: IMPLEMENTED IN EXPERIMENTAL PAIRED TECHO5 / EXTERNAL ASP BUILDS.**
+Protocol identity remains **ASP2**, wire version **2**. This revision uses
+variable-length CFG2/TLV, not the older fixed-size configuration layout.
+Status codes in section 8 describe the implemented current versions.
+This does not imply upstream release acceptance, universal hardware
+qualification, or compatibility with older installed binaries.
 
 The shared ASP2 wire specification is maintained in TECHO5
 (`docs/external-asp/ASP2_PROTOCOL.md`) and mirrored in FrankenASP
@@ -267,9 +268,9 @@ HELLO and exchange deadlines; helper crash/restart and fallback;
 exact PCM identity (no host Q30), one DSP calibration authority and
 the existing 8 ms factory FIFO versus 20 ms capture tick.
 
-The standard is a **draft specification** until the listed tests and
-paired implementations pass. No hardware acceptance or GitHub release
-is implied by drafting this file.
+The ASP2 revision 2 protocol has paired experimental host/helper
+implementations and offline conformance tests. Board-specific hardware
+qualification and any upstream release acceptance remain separate.
 
 
 ## 8. ASP2 status codes and origin reporting
@@ -330,17 +331,16 @@ only to text presentation, **not** the ASP2 wire code and not
 `asp_status_code`; the existing `asp_origin` field remains authoritative
 in structured logs.
 
-**Implementation note:** the 2026-10-29 status-code migration
-replaced the legacy 000 display code for meaningful host messages
-and the real factory ACK. Current TECHO5 rejects a meaningful status
-with Code=0; the recommended host/external halves remain advisory,
-not wire validation boundaries. Older installed binaries may still
-emit or accept STATE 000; update paired binaries consistently.
+**Current implementation:** echod and the current FrankenASP children use
+nonzero numeric codes for meaningful statuses. The TECHO5 decoder accepts
+meaningful status codes from either suggested provider half, but rejects
+a nonempty status with Code=0. A missing status remains Kind=0, Code=0.
+Use compatible paired host and helper builds.
 
 ### 8.2 TECHO5 host-owned status assignments
 
-The following assignments are specific to TECHO5/echod. They are
-**implemented message IDs** in the ASP2 host integration.
+The following codes are implemented in the ASP2 host integration
+of TECHO5/echod.
 `H:` is displayed only in the HA single-string status;
 structured log fields retain numeric status codes.
 

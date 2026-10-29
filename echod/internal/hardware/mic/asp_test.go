@@ -369,9 +369,17 @@ func TestASPFaultBounded(t *testing.T) {
 			if err == nil || out != nil || !f.broken.Load() {
 				t.Fatal("bad output accepted")
 			}
-			// This tolerance is a host scheduling guard, NOT a device realtime claim.
-			if elapsed > 250*time.Millisecond {
-				t.Fatalf("stall %s", elapsed)
+			// Hangs are governed by the configured exchange deadline, not
+			// the previous 25ms realtime budget. Immediate faults stay fast.
+			limit := 250 * time.Millisecond
+			if mode == "input-hang" || mode == "output-hang" || mode == "short-open" {
+				limit = aspFrameBudget + 2*time.Second
+				if elapsed < aspFrameBudget-250*time.Millisecond {
+					t.Fatalf("hang timed out prematurely: %s", elapsed)
+				}
+			}
+			if elapsed > limit {
+				t.Fatalf("stall %s (allowed %s)", elapsed, limit)
 			}
 			start = time.Now()
 			out, err = f.process(nativePattern(31, 1))

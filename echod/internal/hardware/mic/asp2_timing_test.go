@@ -41,17 +41,27 @@ func TestASP2QuantumSchedulingAndHardDeadline(t *testing.T) {
 	}
 	slices.Sort(ns)
 	t.Logf("factory_2or3_quanta_ns p50=%d p95=%d p99=%d max=%d accepted=60", ns[30], ns[57], ns[59], ns[59])
-	hard := configuredChild(t, "factory", aspShape(4, 2), "TECHO5_ASP_QUANTUM_DELAY_MS=10")
+	// 20/30ms DSP quanta must not cause fallback under the 5s budget.
+	slow := configuredChild(t, "factory", aspShape(4, 2), "TECHO5_ASP_QUANTUM_DELAY_MS=10")
+	if r, e := slow.exchange(input); e != nil || r.Type != asp.NotReady {
+		t.Fatal("two 10ms quanta rejected", e)
+	}
+	if r, e := slow.exchange(input); e != nil || r.Type != asp.Data || slow.broken.Load() {
+		t.Fatal("three 10ms quanta rejected", e)
+	}
+	// Two 2-second quanta fit; three must exceed the *same* 5s deadline.
+	hard := configuredChild(t, "factory", aspShape(4, 2), "TECHO5_ASP_QUANTUM_DELAY_MS=2000")
 	if r, e := hard.exchange(input); e != nil || r.Type != asp.NotReady {
-		t.Fatal("two 10ms quanta should fit provisional budget", e)
+		t.Fatal("two 2s quanta should fit 5s budget", e)
 	}
 	start := time.Now()
 	r, e := hard.exchange(input)
 	elapsed := time.Since(start)
-	if e == nil || r.PCM != nil || !hard.broken.Load() || elapsed > 150*time.Millisecond {
-		t.Fatal("three 10ms quanta were not terminated", elapsed, e)
+	if e == nil || r.PCM != nil || !hard.broken.Load() ||
+		elapsed < aspFrameBudget-250*time.Millisecond || elapsed > aspFrameBudget+2*time.Second {
+		t.Fatal("three 2s quanta were not terminated at 5s budget", elapsed, e)
 	}
-	t.Logf("factory_hard_3quanta_ns=%d configured_deadline_ms=25", elapsed.Nanoseconds())
+	t.Logf("factory_hard_3quanta_ns=%d configured_deadline=%s", elapsed.Nanoseconds(), aspFrameBudget)
 }
 func TestASPWarningNeedsExplicitRecovery(t *testing.T) {
 	d := testLogDispatch(t, func(aspLogRecord) {})

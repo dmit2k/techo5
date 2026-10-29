@@ -239,8 +239,15 @@ func TestASPSecureLaunchFormatsAndFaults(t *testing.T) {
 			} else if !errors.Is(e, tc.want) {
 				t.Fatalf("wrong failure: %v want %v", e, tc.want)
 			}
-			if got != nil || !child.broken.Load() || elapsed > 250*time.Millisecond {
-				t.Fatal("fault not bounded", e, elapsed)
+			limit := 250 * time.Millisecond
+			if tc.mode == "config-hang" || tc.mode == "response-hang" {
+				limit = aspFrameBudget + 2*time.Second
+				if elapsed < aspFrameBudget-250*time.Millisecond {
+					t.Fatal("hang timed out before configured budget", e, elapsed)
+				}
+			}
+			if got != nil || !child.broken.Load() || elapsed > limit {
+				t.Fatal("fault not bounded", e, elapsed, limit)
 			}
 			firstError := e
 			if got, e = child.process(nativePattern(31, 1)); got != nil || e == nil {
