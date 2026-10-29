@@ -6,10 +6,12 @@ pre-release incompatible update to the previous fixed 40-byte CFG2.
 Do not use this document to claim that existing TECHO5 or FrankenASP binaries
 already implement these rules. Rebuild and test all participants together.
 
-The canonical copy is held in TECHO5 (`docs/external-asp/ASP2_PROTOCOL.md`).
-A byte-identical snapshot is included in FrankenASP
-(`docs/frankenasp/ASP2_PROTOCOL.md`) for independently authored providers.
-Update both copies as one change and verify SHA-256 equality.
+The shared ASP2 wire specification is maintained in TECHO5
+(`docs/external-asp/ASP2_PROTOCOL.md`) and mirrored in FrankenASP
+(`docs/frankenasp/ASP2_PROTOCOL.md`). Shared protocol rules must remain
+consistent, but implementation-specific status-code tables in section 8
+intentionally differ. Full-file byte identity and matching SHA-256 hashes
+are therefore not required.
 
 ## 1. Ownership and invariant audio contract
 
@@ -268,3 +270,115 @@ the existing 8 ms factory FIFO versus 20 ms capture tick.
 The standard is a **draft specification** until the listed tests and
 paired implementations pass. No hardware acceptance or GitHub release
 is implied by drafting this file.
+
+
+## 8. ASP2 status codes and origin reporting
+
+This section describes the ASP2 status model and **recommended** number
+allocation. It does not introduce a status-code registry, reserve specific
+codes globally across different providers, or change any on-wire field.
+An external DSP implementation is independent of FrankenASP.
+
+### 8.1 Wire representation, classification, and compatibility
+
+ASP2 transports a numeric `uint16` status code and a separate status kind
+(`STATE` or `EVENT`). A completely absent status is `Kind=0, Code=0` and
+has no message: it is **not** an OK/error message and must not create a log
+entry or overwrite the last meaningful status. The intended convention
+for a meaningful status is a nonzero code, preferably within the appropriate
+range below. Do not use `000` as a display code for success, failure, or
+other meaningful states.
+
+The status classes remain:
+
+| Code range | Meaning |
+|---|---|
+| `200–299` | Informational states/events and successful operation |
+| `300–399` | Processing degradation or diagnostic warnings |
+| `400–499` | Configuration degradation |
+| `500–599` | Terminal errors |
+
+For readability, these **nonbinding** subdivisions are suggested:
+
+| Class | TECHO5 host convention | External DSP convention |
+|---|---|---|
+| Info / OK | `200–249` | `250–299` |
+| Processing warnings | `300–349` | `350–399` |
+| Configuration warnings | `400–449` | `450–499` |
+| Terminal errors | `500–549` | `550–599` |
+
+These halves are **recommendations, not wire validation rules**. The host
+must not reject an otherwise valid status solely because an external DSP
+uses a code in the host-preferred half, or vice versa. Providers manage
+their own code meanings; there is no shared TECHO5/FrankenASP registry.
+Within one implementation, a code should consistently identify one
+state/cause; reuse for a different cause is discouraged. Other external
+DSPs may assign different meanings within their recommended half.
+
+For structured host logs, the numeric code and origin remain separate:
+
+```text
+asp_status_code=505 asp_origin=echod asp_kind=STATE asp_message="Fallback: external ASP processing timeout"
+asp_status_code=550 asp_origin=external-asp asp_kind=STATE asp_message="Example DSP processing failure"
+```
+
+The second line is **illustrative**, not an assigned ASP2 protocol code.
+In the single-string HA `ASP debug` entity, display a source prefix with
+colon separators: `H:505:Fallback: external ASP processing timeout` or
+`E:550:Example DSP processing failure`. Prefixes `H:` and `E:` belong
+only to text presentation, **not** the ASP2 wire code and not
+`asp_status_code`; the existing `asp_origin` field remains authoritative
+in structured logs.
+
+**Implementation note (documentation only):** current echod reports its own
+meaningful messages as `000` and its existing decoder can accept a
+nonempty `STATE` with code zero. Some existing helpers also send that
+legacy form. This section documents the agreed target convention; it
+does not claim these implementations already emit the suggested IDs or
+tighten compatibility checks.
+
+### 8.2 TECHO5 host-owned status assignments
+
+The following assignments are specific to TECHO5/echod. They are
+**proposed message IDs, not yet implemented in the host binary**;
+currently the corresponding `hostASPLocked` and fallback messages use
+`000`. `H:` is shown here for the HA text representation only.
+
+| Proposed HA code | Host message |
+|---|---|
+| `H:200` | `Built-in processing OK` |
+| `H:210` | `External ASP starting` |
+| `H:220` | `External ASP processing OK` |
+| `H:340` | `ASP diagnostic queue overflow; lower-priority records dropped` |
+| `H:500` | `Fallback: external ASP binary not found` |
+| `H:501` | `Fallback: external ASP start failed` |
+| `H:502` | `Fallback: external ASP handshake failed` |
+| `H:503` | `Fallback: hardware reference unavailable` |
+| `H:504` | `Fallback: no valid PCM frames received` |
+| `H:505` | `Fallback: external ASP processing timeout` |
+| `H:506` | `Fallback: external ASP exited` |
+| `H:507` | `Fallback: invalid external ASP PCM` |
+| `H:508` | `Fallback: external ASP timeline discontinuity` |
+| `H:509` | `Fallback: invalid external ASP status` |
+
+The ten `500–509` errors originate in echod, including the case where
+echod detects invalid status framing from a child. If a child explicitly
+reports its own valid terminal error, its numeric code and external origin
+must be preserved rather than rewritten as a host error.
+
+### 8.3 External DSP examples (not assignments)
+
+ASP2 does not prescribe individual external-provider codes. For example,
+an independent DSP *might* choose:
+
+| Example HA code | Illustrative meaning |
+|---|---|
+| `E:250` | Configuration accepted |
+| `E:260` | Processing ready |
+| `E:350` | Temporary DSP degradation |
+| `E:450` | Reduced configuration capability |
+| `E:550` | Terminal processing failure |
+
+These examples are not FrankenASP-specific and are not a global registry.
+Individual external providers document their own numbers and may use
+other valid status codes. The TECHO5 host must not hard-code the examples.
