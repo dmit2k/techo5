@@ -94,7 +94,7 @@ func (d *aspLogDispatch) next() (aspLogRecord, bool) {
 	}
 	if d.stats.Dropped != d.reported {
 		d.reported = d.stats.Dropped
-		return aspLogRecord{level: slog.LevelWarn, code: "000", kind: "STATE", origin: "echod", message: "ASP diagnostic queue overflow; lower-priority records dropped"}, true
+		return aspLogRecord{level: slog.LevelWarn, code: "340", kind: "STATE", origin: "echod", message: "ASP diagnostic queue overflow; lower-priority records dropped"}, true
 	}
 	if d.count == 0 {
 		return aspLogRecord{}, false

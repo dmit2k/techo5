@@ -118,7 +118,7 @@ func preflightASP(t *testing.T, s *Source, mode string) {
 				t.Fatal("preflight PCM escaped")
 			}
 			st := s.ASPStatus()
-			if st.Active != config.ASPBuiltin || st.Confirmed || st.Selected != config.ASPExternal || st.Debug != "000: External ASP starting" {
+			if st.Active != config.ASPBuiltin || st.Confirmed || st.Selected != config.ASPExternal || st.Debug != "H:210:External ASP starting" {
 				t.Fatal("false readiness", st)
 			}
 		} else {
@@ -130,7 +130,7 @@ func preflightASP(t *testing.T, s *Source, mode string) {
 				t.Fatal("promotion used wrong current frame")
 			}
 			st := s.ASPStatus()
-			if st.Active != config.ASPExternal || !st.Confirmed || st.Debug != "000: External ASP processing OK" {
+			if st.Active != config.ASPExternal || !st.Confirmed || st.Debug != "H:220:External ASP processing OK" {
 				t.Fatal("not promoted", st)
 			}
 		}
@@ -160,7 +160,7 @@ func TestASPControlFirstSuccessAndSilence(t *testing.T) {
 			}
 			s.SetASP(config.ASPBuiltin)
 			st := s.ASPStatus()
-			if st.Selected != config.ASPBuiltin || st.Active != config.ASPBuiltin || st.Debug != "000: Built-in processing OK" {
+			if st.Selected != config.ASPBuiltin || st.Active != config.ASPBuiltin || st.Debug != "H:200:Built-in processing OK" {
 				t.Fatal(st)
 			}
 		})
@@ -196,9 +196,9 @@ func TestASPControlStartupFailuresAndBootKeep(t *testing.T) {
 					}
 					s.broadcastNative(rawFrame(0, false), n)
 				}
-				st := waitASP(t, s, func(st ASPStatus) bool { return strings.HasPrefix(st.Debug, "000: Fallback:") })
+				st := waitASP(t, s, func(st ASPStatus) bool { return strings.HasPrefix(st.Debug, "H:500:Fallback:") })
 				want := map[string]string{"missing": errASPNotFound.Error(), "start": errASPStart.Error(), "handshake": errASPHandshake.Error(), "malformed": errASPInvalid.Error(), "none": errASPTimeout.Error(), "reference": errASPReference.Error()}[kind]
-				if st.Debug != "000: Fallback: "+want || st.Active != config.ASPBuiltin || st.Confirmed || st.Selected != saved {
+				if st.Debug != "H:500:Fallback: "+want || st.Active != config.ASPBuiltin || st.Confirmed || st.Selected != saved {
 					t.Fatalf("wrong failure semantics: %+v", st)
 				}
 				if config.Get().Microphone.ASP != saved {
@@ -242,7 +242,7 @@ func TestASPControlRuntimeFaultsCurrentStockNoRetry(t *testing.T) {
 			case "short", "length", "sequence", "repeat":
 				reason = errASPInvalid.Error()
 			}
-			if st.Selected != config.ASPExternal || st.Active != config.ASPBuiltin || !st.Confirmed || st.Debug != "000: Fallback: "+reason {
+			if st.Selected != config.ASPExternal || st.Active != config.ASPBuiltin || !st.Confirmed || st.Debug != "H:500:Fallback: "+reason {
 				t.Fatal(st)
 			}
 			for i := 0; i < 5; i++ {
@@ -284,13 +284,13 @@ func TestASPControlNoCaptureBeforeRunAndNoPCMTimeout(t *testing.T) {
 		t.Fatal("started helper before hardware capture")
 	}
 	time.Sleep(aspFirstPCMBudget + 20*time.Millisecond)
-	if s.ASPStatus().Debug != "000: External ASP starting" {
+	if s.ASPStatus().Debug != "H:210:External ASP starting" {
 		t.Fatal("timed out before capture goroutine exists")
 	}
 	s.beginASPCapture()
 	waitASPChild(t, s)
-	st := waitASP(t, s, func(st ASPStatus) bool { return strings.HasPrefix(st.Debug, "000: Fallback:") })
-	if st.Selected != config.ASPExternal || st.Debug != "000: Fallback: no valid PCM frames received" {
+	st := waitASP(t, s, func(st ASPStatus) bool { return strings.HasPrefix(st.Debug, "H:500:Fallback:") })
+	if st.Selected != config.ASPExternal || st.Debug != "H:504:Fallback: no valid PCM frames received" {
 		t.Fatal(st)
 	}
 }
@@ -382,7 +382,7 @@ func TestASPControlCancelPipeWithoutSourceLock(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("capture stuck after cancellation")
 	}
-	if s.ASPStatus().Active != config.ASPBuiltin || s.ASPStatus().Debug != "000: Built-in processing OK" {
+	if s.ASPStatus().Active != config.ASPBuiltin || s.ASPStatus().Debug != "H:200:Built-in processing OK" {
 		t.Fatal("stale result won")
 	}
 	select {

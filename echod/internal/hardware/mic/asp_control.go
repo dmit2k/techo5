@@ -77,7 +77,7 @@ func (s *Source) statusASPLocked() ASPStatus {
 		st.Active = config.ASPBuiltin
 	}
 	if st.Debug == "" {
-		st.Debug = "000: Built-in processing OK"
+		st.Debug = hostASPText(hostASPBuiltinOK, "Built-in processing OK")
 	}
 	return st
 }
@@ -134,14 +134,14 @@ func (s *Source) SetASP(want config.ASPMode) config.ASPMode {
 	s.aspEventText = ""
 	s.aspEventAt = time.Time{}
 	if want == config.ASPBuiltin {
-		s.hostASPLocked("Built-in processing OK", slog.LevelInfo)
+		s.hostASPLocked(hostASPBuiltinOK, "Built-in processing OK", slog.LevelInfo)
 	}
 	launch := false
 	if want == config.ASPExternal {
 		ctx, cancel := context.WithCancel(context.Background())
 		next := &aspAttempt{ctx: ctx, cancel: cancel, keep: keep}
 		s.aspAttempt = next
-		s.hostASPLocked("External ASP starting", slog.LevelInfo)
+		s.hostASPLocked(hostASPStarting, "External ASP starting", slog.LevelInfo)
 		s.armASPLocked(next)
 		// Startup configuration can be restored before ALSA is acquired.
 		// Launch only once capture is ready, not against a nil hardware REF.
@@ -246,29 +246,31 @@ func (s *Source) beginASPCapture() {
 	}
 }
 
-func aspFailure(err error, good int) string {
+func aspFailure(err error, _ int) (uint16, string) {
+	// Keep the wire status untouched for errors that originate in a helper.
+	code := hostASPExited
 	reason := errASPExited
 	switch {
 	case errors.Is(err, errASPNotFound):
-		reason = errASPNotFound
+		code, reason = hostASPNotFound, errASPNotFound
 	case errors.Is(err, errASPStart):
-		reason = errASPStart
+		code, reason = hostASPStartFailed, errASPStart
 	case errors.Is(err, errASPHandshake):
-		reason = errASPHandshake
+		code, reason = hostASPHandshakeFailed, errASPHandshake
 	case errors.Is(err, errASPReference):
-		reason = errASPReference
+		code, reason = hostASPReferenceUnavailable, errASPReference
 	case errors.Is(err, asp.ErrStatus):
-		return "Fallback: invalid external ASP status"
+		return hostASPInvalidStatus, "Fallback: invalid external ASP status"
 	case errors.Is(err, errASPTimeline):
-		return "Fallback: external ASP timeline discontinuity"
+		return hostASPTimeline, "Fallback: external ASP timeline discontinuity"
 	case errors.Is(err, errASPInvalid):
-		reason = errASPInvalid
+		code, reason = hostASPInvalidPCM, errASPInvalid
 	case errors.Is(err, errASPNoPCM):
-		reason = errASPNoPCM
+		code, reason = hostASPNoPCM, errASPNoPCM
 	case errors.Is(err, errASPTimeout):
-		reason = errASPTimeout
+		code, reason = hostASPTimeout, errASPTimeout
 	}
-	return "Fallback: " + reason.Error()
+	return code, "Fallback: " + reason.Error()
 }
 
 func (s *Source) failASPLocked(a *aspAttempt, err error) {
@@ -357,14 +359,14 @@ func (s *Source) chooseASP(stock []int16, r aspResult) []int16 {
 		s.aspStatus.Confirmed = true
 		if a.feedback.Present() && a.feedback.Message == "" {
 			def := statusDefault(a.feedback, "External ASP processing OK")
-			text := a.feedback.Text(def)
+			text := externalASPText(a.feedback, def)
 			if text != s.aspStatus.Debug {
 				s.aspStatus.Debug = text
 				s.logASPLocked(a.feedback, "external-asp", def, slog.LevelInfo)
 			}
 		}
 		if !a.feedback.Present() && !s.aspWarning {
-			s.hostASPLocked("External ASP processing OK", slog.LevelInfo)
+			s.hostASPLocked(hostASPProcessingOK, "External ASP processing OK", slog.LevelInfo)
 		}
 		s.notifyASPLocked()
 	}

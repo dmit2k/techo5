@@ -25,9 +25,9 @@ type aspFake struct {
 func (f *aspFake) SetASP(v config.ASPMode) config.ASPMode {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.state = mic.ASPStatus{Selected: v, Active: config.ASPBuiltin, Debug: "000: Built-in processing OK", Request: f.state.Request + 1}
+	f.state = mic.ASPStatus{Selected: v, Active: config.ASPBuiltin, Debug: "H:200:Built-in processing OK", Request: f.state.Request + 1}
 	if v == config.ASPExternal {
-		f.state.Debug = "000: External ASP starting"
+		f.state.Debug = "H:210:External ASP starting"
 	}
 	return v
 }
@@ -53,7 +53,7 @@ func aspFeature(t *testing.T, have bool, saved config.ASPMode) (*Microphone, *as
 	if err := config.Set().Microphone().ASP(saved); err != nil {
 		t.Fatal(err)
 	}
-	f := &aspFake{state: mic.ASPStatus{Selected: config.ASPBuiltin, Active: config.ASPBuiltin, Debug: "000: Built-in processing OK"}, changed: make(chan struct{}, 1)}
+	f := &aspFake{state: mic.ASPStatus{Selected: config.ASPBuiltin, Active: config.ASPBuiltin, Debug: "H:200:Built-in processing OK"}, changed: make(chan struct{}, 1)}
 	m := &Microphone{}
 	m.bindASP(f, have)
 	return m, f, path
@@ -68,25 +68,25 @@ func assertASPFeature(t *testing.T, m *Microphone, selection, active, debug stri
 
 func TestASPFeatureFirstSaveAndExplicitBuiltin(t *testing.T) {
 	m, f, path := aspFeature(t, true, config.ASPBuiltin)
-	assertASPFeature(t, m, "Built-in", "Built-in", "000: Built-in processing OK", config.ASPBuiltin)
+	assertASPFeature(t, m, "Built-in", "Built-in", "H:200:Built-in processing OK", config.ASPBuiltin)
 	m.asp.OnCommand("External")
-	assertASPFeature(t, m, "External", "Built-in", "000: External ASP starting", config.ASPBuiltin)
+	assertASPFeature(t, m, "External", "Built-in", "H:210:External ASP starting", config.ASPBuiltin)
 	reload, err := config.Load(path)
 	if err != nil || reload.Get().Microphone.ASP != config.ASPBuiltin {
 		t.Fatal("saved on click")
 	}
-	f.transition(config.ASPExternal, config.ASPExternal, "000: External ASP processing OK", true)
+	f.transition(config.ASPExternal, config.ASPExternal, "H:220:External ASP processing OK", true)
 	m.syncASP()
-	assertASPFeature(t, m, "External", "External", "000: External ASP processing OK", config.ASPExternal)
+	assertASPFeature(t, m, "External", "External", "H:220:External ASP processing OK", config.ASPExternal)
 	reload, err = config.Load(path)
 	if err != nil || reload.Get().Microphone.ASP != config.ASPExternal {
 		t.Fatal("confirmed ASP not saved/reloaded")
 	}
-	f.transition(config.ASPExternal, config.ASPBuiltin, "000: Fallback: external ASP exited", true)
+	f.transition(config.ASPExternal, config.ASPBuiltin, "H:506:Fallback: external ASP exited", true)
 	m.syncASP()
-	assertASPFeature(t, m, "External", "Built-in", "000: Fallback: external ASP exited", config.ASPExternal)
+	assertASPFeature(t, m, "External", "Built-in", "H:506:Fallback: external ASP exited", config.ASPExternal)
 	m.asp.OnCommand("Built-in")
-	assertASPFeature(t, m, "Built-in", "Built-in", "000: Built-in processing OK", config.ASPBuiltin)
+	assertASPFeature(t, m, "Built-in", "Built-in", "H:200:Built-in processing OK", config.ASPBuiltin)
 	reload, err = config.Load(path)
 	if err != nil || reload.Get().Microphone.ASP != config.ASPBuiltin {
 		t.Fatal("explicit Built-in not saved")
@@ -98,9 +98,9 @@ func TestASPFeatureFirstFailVersusSavedBootFail(t *testing.T) {
 		m, f, _ := aspFeature(t, true, saved)
 		m.restoreASP(config.ASPExternal)
 		selected := saved
-		f.transition(selected, config.ASPBuiltin, "000: Fallback: external ASP binary not found", false)
+		f.transition(selected, config.ASPBuiltin, "H:500:Fallback: external ASP binary not found", false)
 		m.syncASP()
-		assertASPFeature(t, m, selected.Label(), "Built-in", "000: Fallback: external ASP binary not found", saved)
+		assertASPFeature(t, m, selected.Label(), "Built-in", "H:500:Fallback: external ASP binary not found", saved)
 	}
 }
 
@@ -110,14 +110,14 @@ func TestASPFeatureUnavailableOptionsHonestRestore(t *testing.T) {
 		t.Fatal("offered unavailable External")
 	}
 	m.asp.OnCommand("External")
-	assertASPFeature(t, m, "Built-in", "Built-in", "000: Built-in processing OK", config.ASPBuiltin)
+	assertASPFeature(t, m, "Built-in", "Built-in", "H:200:Built-in processing OK", config.ASPBuiltin)
 	if err := config.Set().Microphone().ASP(config.ASPExternal); err != nil {
 		t.Fatal(err)
 	}
 	m.restoreASP(config.ASPExternal)
-	f.transition(config.ASPExternal, config.ASPBuiltin, "000: Fallback: external ASP binary not found", false)
+	f.transition(config.ASPExternal, config.ASPBuiltin, "H:500:Fallback: external ASP binary not found", false)
 	m.syncASP()
-	assertASPFeature(t, m, "External", "Built-in", "000: Fallback: external ASP binary not found", config.ASPExternal)
+	assertASPFeature(t, m, "External", "Built-in", "H:500:Fallback: external ASP binary not found", config.ASPExternal)
 	if !slices.Equal(m.asp.Options, []string{"Built-in", "External"}) {
 		t.Fatal("cannot display saved unavailable choice")
 	}
@@ -130,20 +130,20 @@ func TestASPFeatureUnavailableOptionsHonestRestore(t *testing.T) {
 func TestASPFeatureCoalescedPromotionFailureStillSaves(t *testing.T) {
 	m, f, _ := aspFeature(t, true, config.ASPBuiltin)
 	m.asp.OnCommand("External")
-	f.transition(config.ASPExternal, config.ASPExternal, "000: External ASP processing OK", true)
-	f.transition(config.ASPExternal, config.ASPBuiltin, "000: Fallback: external ASP exited", true)
+	f.transition(config.ASPExternal, config.ASPExternal, "H:220:External ASP processing OK", true)
+	f.transition(config.ASPExternal, config.ASPBuiltin, "H:506:Fallback: external ASP exited", true)
 	m.syncASP()
-	assertASPFeature(t, m, "External", "Built-in", "000: Fallback: external ASP exited", config.ASPExternal)
+	assertASPFeature(t, m, "External", "Built-in", "H:506:Fallback: external ASP exited", config.ASPExternal)
 }
 
 func TestASPFeatureLatestCommandDoesNotSaveStaleSuccess(t *testing.T) {
 	m, f, _ := aspFeature(t, true, config.ASPBuiltin)
 	m.asp.OnCommand("External")
-	f.transition(config.ASPExternal, config.ASPExternal, "000: External ASP processing OK", true)
+	f.transition(config.ASPExternal, config.ASPExternal, "H:220:External ASP processing OK", true)
 	// The queued notification survives, but the callback reads current state after the newer command.
 	m.asp.OnCommand("Built-in")
 	m.syncASP()
-	assertASPFeature(t, m, "Built-in", "Built-in", "000: Built-in processing OK", config.ASPBuiltin)
+	assertASPFeature(t, m, "Built-in", "Built-in", "H:200:Built-in processing OK", config.ASPBuiltin)
 }
 
 func TestASPFeaturePushWithoutPolling(t *testing.T) {
@@ -152,7 +152,7 @@ func TestASPFeaturePushWithoutPolling(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { done <- m.Run(ctx) }()
 	m.asp.OnCommand("External")
-	f.transition(config.ASPExternal, config.ASPExternal, "000: External ASP processing OK", true)
+	f.transition(config.ASPExternal, config.ASPExternal, "H:220:External ASP processing OK", true)
 	until := time.Now().Add(time.Second)
 	for m.activeASP.Get() != "External" {
 		if time.Now().After(until) {
@@ -164,7 +164,7 @@ func TestASPFeaturePushWithoutPolling(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
-	assertASPFeature(t, m, "External", "External", "000: External ASP processing OK", config.ASPExternal)
+	assertASPFeature(t, m, "External", "External", "H:220:External ASP processing OK", config.ASPExternal)
 }
 
 func TestASPFeatureEntityInventory(t *testing.T) {
@@ -208,16 +208,16 @@ func TestASPFeatureRealSourceDefersUntilCapture(t *testing.T) {
 	go func() { done <- m.Run(ctx) }()
 	m.restoreASP(config.ASPExternal)
 	// The host must not attempt a factory launch before ALSA capture is open.
-	assertASPFeature(t, m, "External", "Built-in", "000: External ASP starting", config.ASPExternal)
+	assertASPFeature(t, m, "External", "Built-in", "H:210:External ASP starting", config.ASPExternal)
 	select {
 	case <-source.ASPChanges():
 		// The initial requested-state notification is allowed.
 	default:
 	}
 	time.Sleep(30 * time.Millisecond)
-	assertASPFeature(t, m, "External", "Built-in", "000: External ASP starting", config.ASPExternal)
+	assertASPFeature(t, m, "External", "Built-in", "H:210:External ASP starting", config.ASPExternal)
 	m.asp.OnCommand("Built-in")
-	assertASPFeature(t, m, "Built-in", "Built-in", "000: Built-in processing OK", config.ASPBuiltin)
+	assertASPFeature(t, m, "Built-in", "Built-in", "H:200:Built-in processing OK", config.ASPBuiltin)
 	cancel()
 	<-done
 }

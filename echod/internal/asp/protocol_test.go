@@ -103,10 +103,9 @@ func TestStatusOptionalExactFormatAndClasses(t *testing.T) {
 		s         Status
 		def, want string
 	}{
-		{Status{}, "Built-in processing OK", "000: Built-in processing OK"},
+		{Status{}, "", "000: "},
 		{Status{State, 200, "External ASP started (8 mic, 2 ref)"}, "External ASP starting", "200: External ASP started (8 mic, 2 ref)"},
 		{Status{State, 201, ""}, "External ASP processing OK", "201: External ASP processing OK"},
-		{Status{State, 0, "External ASP fallback beam active"}, "unused", "000: External ASP fallback beam active"},
 		{Status{State, 301, "Noise suppressor disabled"}, "unused", "301: Noise suppressor disabled"},
 		{Status{State, 422, "Reduced array mode active"}, "unused", "422: Reduced array mode active"},
 		{Status{State, 522, "Required hardware reference unavailable"}, "unused", "522: Required hardware reference unavailable"},
@@ -123,13 +122,13 @@ func TestStatusOptionalExactFormatAndClasses(t *testing.T) {
 			t.Fatal(code)
 		}
 	}
-	for _, code := range []uint16{0, 200, 299, 300, 399, 400, 499, 500, 599} {
+	for _, code := range []uint16{200, 249, 250, 299, 300, 349, 350, 399, 400, 449, 450, 499, 500, 549, 550, 599} {
 		s := Status{State, code, ""}
 		if _, e := s.Validate(); e != nil {
 			t.Fatal(code, e)
 		}
 	}
-	for _, s := range []Status{{9, 200, "x"}, {0, 200, ""}, {Event, 301, "x"}, {Event, 422, "x"}} {
+	for _, s := range []Status{{9, 200, "x"}, {0, 200, ""}, {State, 0, "x"}, {Event, 0, "x"}, {Event, 301, "x"}, {Event, 422, "x"}} {
 		if _, e := s.Validate(); e == nil {
 			t.Fatal(s)
 		}
@@ -176,15 +175,13 @@ func TestTypedFatalPreemptsPCMAndAccept(t *testing.T) {
 			if typ == Reject {
 				WriteResult(&b, ConfigResult{Type: Reject, Status: s})
 				_, err := ReadResult(&b)
-				var f *Terminal
-				if code == 0 && !errors.As(err, &f) || code != 0 && !errors.Is(err, ErrStatus) {
+				if !errors.Is(err, ErrStatus) {
 					t.Fatal(code, err)
 				}
 			} else {
 				WriteReply(&b, Reply{Type: Fatal, Status: s})
 				_, err := ReadReply(&b)
-				var f *Terminal
-				if code == 0 && !errors.As(err, &f) || code != 0 && !errors.Is(err, ErrStatus) {
+				if !errors.Is(err, ErrStatus) {
 					t.Fatal(code, err)
 				}
 			}

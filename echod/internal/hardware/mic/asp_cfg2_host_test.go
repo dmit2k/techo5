@@ -316,7 +316,7 @@ func TestHostCFG2FaultFallback(t *testing.T) {
 		f := s.asp
 		s.broadcastNative(rawFrame(0, false), nativePattern(31, 0))
 		st := s.ASPStatus()
-		if st.Active != config.ASPBuiltin || st.Confirmed || !strings.HasPrefix(st.Debug, "522:") {
+		if st.Active != config.ASPBuiltin || st.Confirmed || !strings.HasPrefix(st.Debug, "E:522:") {
 			t.Fatal(st)
 		}
 		hostCFG2Reaped(t, f)
@@ -681,7 +681,7 @@ func TestHostCFG2ControlCancelPipe(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("cancel did not interrupt PCM exchange")
 	}
-	if st := s.ASPStatus(); st.Active != config.ASPBuiltin || st.Debug != "000: Built-in processing OK" {
+	if st := s.ASPStatus(); st.Active != config.ASPBuiltin || st.Debug != "H:200:Built-in processing OK" {
 		t.Fatal("stale failure replaced manual selection", st)
 	}
 	hostCFG2Reaped(t, child)

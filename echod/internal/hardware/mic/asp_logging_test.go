@@ -57,26 +57,26 @@ func TestASPLoggingAndHAPriority(t *testing.T) {
 	}
 	emit(asp.Status{Kind: asp.State, Code: 200, Message: "Started"})
 	emit(asp.Status{Kind: asp.State, Code: 200, Message: "Started"})
-	if s.ASPStatus().Debug != "200: Started" {
+	if s.ASPStatus().Debug != "E:200:Started" {
 		t.Fatal(s.ASPStatus())
 	}
 	emit(asp.Status{Kind: asp.Event, Code: 210, Message: "Simulated beam changed"})
 	emit(asp.Status{Kind: asp.Event, Code: 210, Message: "Simulated beam changed"})
-	if s.ASPStatus().Debug != "210: Simulated beam changed" {
+	if s.ASPStatus().Debug != "E:210:Simulated beam changed" {
 		t.Fatal(s.ASPStatus())
 	}
 	emit(asp.Status{Kind: asp.State, Code: 301, Message: "Noise suppressor disabled"})
 	emit(asp.Status{Kind: asp.Event, Code: 210, Message: "Simulated event during warning"})
-	if s.ASPStatus().Debug != "301: Noise suppressor disabled" {
+	if s.ASPStatus().Debug != "E:301:Noise suppressor disabled" {
 		t.Fatal("event hid warning")
 	}
 	emit(asp.Status{Kind: asp.State, Code: 422, Message: "Reduced array mode active"})
-	emit(asp.Status{Kind: asp.Event, Code: 0, Message: "Informational observation"})
-	if s.ASPStatus().Debug != "422: Reduced array mode active" {
+	emit(asp.Status{Kind: asp.Event, Code: 211, Message: "Informational observation"})
+	if s.ASPStatus().Debug != "E:422:Reduced array mode active" {
 		t.Fatal("event hid configuration warning")
 	}
 	emit(asp.Status{Kind: asp.State, Code: 201})
-	if s.ASPStatus().Debug != "201: External ASP processing OK" {
+	if s.ASPStatus().Debug != "E:201:External ASP processing OK" {
 		t.Fatal("no explicit recovery")
 	}
 	now = now.Add(6 * time.Second)
@@ -169,7 +169,7 @@ func TestASPLoggingBlockedHandlerFatalPriority(t *testing.T) {
 		max = maxDuration(max, time.Since(start))
 	}
 	st := s.ASPStatus()
-	if st.Debug != "503: ASP processing failed" || st.Active != config.ASPBuiltin || st.Selected != config.ASPExternal || config.Get().Microphone.ASP != config.ASPExternal {
+	if st.Debug != "E:503:ASP processing failed" || st.Active != config.ASPBuiltin || st.Selected != config.ASPExternal || config.Get().Microphone.ASP != config.ASPExternal {
 		t.Fatal(st)
 	}
 	select {

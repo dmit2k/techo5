@@ -58,18 +58,18 @@ func TestASPWarningNeedsExplicitRecovery(t *testing.T) {
 	s := testSource()
 	s.aspLog = d
 	a := &aspAttempt{}
-	for _, st := range []asp.Status{{Kind: asp.State, Code: 301, Message: "Noise suppressor disabled"}, {Kind: asp.State, Message: "Informational text only"}, {Kind: asp.State, Message: "Informational text only"}} {
+	for _, st := range []asp.Status{{Kind: asp.State, Code: 301, Message: "Noise suppressor disabled"}, {Kind: asp.State, Code: 250, Message: "Informational text only"}, {Kind: asp.State, Code: 250, Message: "Informational text only"}} {
 		s.aspMu.Lock()
 		s.feedbackASPLocked(a, st, "External ASP processing OK")
 		s.aspMu.Unlock()
 	}
-	if s.ASPStatus().Debug != "301: Noise suppressor disabled" {
-		t.Fatal("uncoded message hid warning")
+	if s.ASPStatus().Debug != "E:250:Informational text only" {
+		t.Fatal("explicit information state was suppressed")
 	}
 	s.aspMu.Lock()
 	s.feedbackASPLocked(a, asp.Status{Kind: asp.State, Code: 200}, "External ASP processing OK")
 	s.aspMu.Unlock()
-	if s.ASPStatus().Debug != "200: External ASP processing OK" {
+	if s.ASPStatus().Debug != "E:200:External ASP processing OK" {
 		t.Fatal("explicit recovery ignored")
 	}
 	drainLog(t, d, 3)

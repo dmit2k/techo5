@@ -330,21 +330,21 @@ only to text presentation, **not** the ASP2 wire code and not
 `asp_status_code`; the existing `asp_origin` field remains authoritative
 in structured logs.
 
-**Implementation note (documentation only):** current echod reports its own
-meaningful messages as `000` and its existing decoder can accept a
-nonempty `STATE` with code zero. Some existing helpers also send that
-legacy form. This section documents the agreed target convention; it
-does not claim these implementations already emit the suggested IDs or
-tighten compatibility checks.
+**Implementation note:** the 2026-10-29 status-code migration
+replaced the legacy 000 display code for meaningful host messages
+and the real factory ACK. Current TECHO5 rejects a meaningful status
+with Code=0; the recommended host/external halves remain advisory,
+not wire validation boundaries. Older installed binaries may still
+emit or accept STATE 000; update paired binaries consistently.
 
 ### 8.2 TECHO5 host-owned status assignments
 
 The following assignments are specific to TECHO5/echod. They are
-**proposed message IDs, not yet implemented in the host binary**;
-currently the corresponding `hostASPLocked` and fallback messages use
-`000`. `H:` is shown here for the HA text representation only.
+**implemented message IDs** in the ASP2 host integration.
+`H:` is displayed only in the HA single-string status;
+structured log fields retain numeric status codes.
 
-| Proposed HA code | Host message |
+| HA code | Host message |
 |---|---|
 | `H:200` | `Built-in processing OK` |
 | `H:210` | `External ASP starting` |

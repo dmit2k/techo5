@@ -414,7 +414,7 @@ func TestASP2SeededReactivationNoLagAccumulation(t *testing.T) {
 
 func TestASP2FeedbackStateFatalAndPersistence(t *testing.T) {
 	for _, saved := range []config.ASPMode{config.ASPBuiltin, config.ASPExternal} {
-		for _, code := range []int{0, 200, 201, 301, 422, 503, 522} {
+		for _, code := range []int{250, 200, 201, 301, 422, 503, 522} {
 			t.Run(fmt.Sprintf("%s/%d", saved, code), func(t *testing.T) {
 				s := controlSource(t, "normal", saved, nativeASPConfig(23))
 				s.aspStart = func(ctx context.Context) (*externalASP, error) {
@@ -428,7 +428,7 @@ func TestASP2FeedbackStateFatalAndPersistence(t *testing.T) {
 					s.broadcastNative(rawFrame(tick, false), nativePattern(23, tick))
 				}
 				st := s.ASPStatus()
-				if st.Debug != fmt.Sprintf("%03d: Bounded helper state", code) {
+				if st.Debug != fmt.Sprintf("E:%03d:Bounded helper state", code) {
 					t.Fatal(st)
 				}
 				if code >= 500 {
@@ -451,7 +451,7 @@ func TestASP2FeedbackStateFatalAndPersistence(t *testing.T) {
 		preflightASP(t, s, "normal")
 		s.broadcastNative(rawFrame(4, false), nativePattern(31, 4))
 		st := s.ASPStatus()
-		if st.Debug != "503: ASP processing failed" || st.Active != config.ASPBuiltin || st.Selected != config.ASPExternal {
+		if st.Debug != "E:503:ASP processing failed" || st.Active != config.ASPBuiltin || st.Selected != config.ASPExternal {
 			t.Fatal(st)
 		}
 		s.broadcastNative(rawFrame(5, false), nativePattern(31, 5))

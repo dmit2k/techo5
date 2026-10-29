@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -21,7 +20,7 @@ func TestASP2MalformedStatusHostReason(t *testing.T) {
 			waitASPChild(t, s)
 			s.broadcastNative(rawFrame(0, false), nativePattern(23, 0))
 			st := s.ASPStatus()
-			if st.Debug != "000: Fallback: invalid external ASP status" || st.Active != config.ASPBuiltin || st.Selected != config.ASPExternal {
+			if st.Debug != "H:509:Fallback: invalid external ASP status" || st.Active != config.ASPBuiltin || st.Selected != config.ASPExternal {
 				t.Fatal(st)
 			}
 		})
@@ -32,11 +31,11 @@ func TestASP2OptionalStatusDefaults(t *testing.T) {
 		env  []string
 		want string
 	}{
-		{nil, "000: External ASP processing OK"},
-		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=201"}, "201: External ASP processing OK"},
-		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_MSG=External ASP fallback beam active"}, "000: External ASP fallback beam active"},
-		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=422"}, "422: External ASP configuration degraded"},
-		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=200", "TECHO5_ASP_ACK_MSG=External ASP started (8 mic, 2 ref)"}, "200: External ASP started (8 mic, 2 ref)"},
+		{nil, "H:220:External ASP processing OK"},
+		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=201"}, "E:201:External ASP processing OK"},
+		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=250", "TECHO5_ASP_ACK_MSG=External ASP fallback beam active"}, "E:250:External ASP fallback beam active"},
+		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=422"}, "E:422:External ASP configuration degraded"},
+		{[]string{"TECHO5_ASP_ACK_KIND=1", "TECHO5_ASP_ACK_CODE=200", "TECHO5_ASP_ACK_MSG=External ASP started (8 mic, 2 ref)"}, "E:200:External ASP started (8 mic, 2 ref)"},
 	} {
 		s := controlSource(t, "normal", config.ASPBuiltin, nativeASPConfig(23))
 		env := row.env
@@ -63,13 +62,13 @@ func TestASP2OptionalStatusDefaults(t *testing.T) {
 				prefix = "TECHO5_ASP_REPLY"
 				cmd.Env = append(cmd.Env, "TECHO5_ASP_REPLY_TYPE=3")
 			}
-			cmd.Env = append(cmd.Env, prefix+"_KIND=1", prefix+"_MSG=Unrecoverable DSP fault")
+			cmd.Env = append(cmd.Env, prefix+"_KIND=1", prefix+"_CODE=570", prefix+"_MSG=Unrecoverable DSP fault")
 			return startTestASP(ctx, cmd, nativeASPConfig(23))
 		}
 		s.SetASP(config.ASPExternal)
 		waitASPChild(t, s)
 		s.broadcastNative(rawFrame(0, false), nativePattern(23, 0))
-		if st := s.ASPStatus(); st.Debug != "000: Unrecoverable DSP fault" || st.Active != config.ASPBuiltin || st.Selected != config.ASPBuiltin {
+		if st := s.ASPStatus(); st.Debug != "E:570:Unrecoverable DSP fault" || st.Active != config.ASPBuiltin || st.Selected != config.ASPBuiltin {
 			t.Fatal(st)
 		}
 	}
@@ -206,10 +205,10 @@ func TestASP2NotReadyFeedbackUsesStartingDefault(t *testing.T) {
 		s.broadcastNative(raw, n)
 		st := s.ASPStatus()
 		if tick < 4 {
-			if st.Debug != "201: External ASP starting" || st.Active != config.ASPBuiltin || st.Confirmed {
+			if st.Debug != "E:201:External ASP starting" || st.Active != config.ASPBuiltin || st.Confirmed {
 				t.Fatal("feedback faked PCM readiness", tick, st)
 			}
-		} else if st.Debug != "201: External ASP processing OK" || st.Active != config.ASPExternal || !st.Confirmed {
+		} else if st.Debug != "E:201:External ASP processing OK" || st.Active != config.ASPExternal || !st.Confirmed {
 			t.Fatal(st)
 		}
 	}
@@ -231,16 +230,18 @@ func TestASP2FirstExchangeFailureKeepsAcceptedConfigLog(t *testing.T) {
 			s.SetASP(config.ASPExternal)
 			waitASPChild(t, s)
 			s.broadcastNative(rawFrame(0, false), nativePattern(23, 0))
-			want := "000: Fallback: external ASP exited"
+			want := "H:506:Fallback: external ASP exited"
 			if mode == "output-hang" || mode == "config-hang" {
-				want = "000: Fallback: external ASP processing timeout"
+				want = "H:504:Fallback: no valid PCM frames received"
 			}
 			if s.ASPStatus().Debug != want {
 				t.Fatal(mode, s.ASPStatus())
 			}
-			total := uint64(3)
-			if strings.HasPrefix(mode, "config-") {
-				total = 2
+			// The preflight timer may fail the attempt before a blocked exchange
+			// can deliver the accepted ACK, with the configured 5-second budget.
+			total := uint64(2)
+			if mode == "crash" {
+				total = 3
 			}
 			drainLog(t, d, total)
 			mu.Lock()
@@ -251,7 +252,7 @@ func TestASP2FirstExchangeFailureKeepsAcceptedConfigLog(t *testing.T) {
 					found = true
 				}
 			}
-			if found == strings.HasPrefix(mode, "config-") {
+			if found != (mode == "crash") {
 				t.Fatal("validated ConfigResult feedback missing or invented", mode, records)
 			}
 			if d.snapshot().Dropped != 0 {

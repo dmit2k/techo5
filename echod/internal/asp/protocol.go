@@ -172,7 +172,9 @@ func (s Status) Validate() (Status, error) {
 	if s.Kind != State && s.Kind != Event {
 		return Status{}, ErrStatus
 	}
-	if s.Code != 0 && (s.Code < 200 || s.Code > 599) {
+	// Zero is reserved exclusively for a wholly absent status (Kind=0).
+	// The host/external halves of the nonzero range are advisory, not enforced.
+	if s.Code < 200 || s.Code > 599 {
 		return Status{}, ErrStatus
 	}
 	if s.Kind == Event && s.Code >= 300 && !s.Terminal() {
@@ -237,10 +239,7 @@ func ReadResult(r io.Reader) (ConfigResult, error) {
 		return a, ErrStatus
 	}
 	if a.Type == Reject {
-		if s.Code != 0 {
-			return a, ErrStatus
-		}
-		return a, &Terminal{s, true}
+		return a, ErrStatus // A reject must carry a typed terminal status.
 	}
 	return a, nil
 }
@@ -291,10 +290,7 @@ func ReadReply(r io.Reader) (Reply, error) {
 		return a, &Terminal{s, false}
 	}
 	if a.Type == Fatal {
-		if s.Code != 0 {
-			return a, ErrStatus
-		}
-		return a, &Terminal{s, false}
+		return a, ErrStatus // A fatal response must carry a typed terminal status.
 	}
 	size := binary.LittleEndian.Uint32(h[28:])
 	if a.Type == NotReady {
