@@ -16,7 +16,7 @@ import (
 const (
 	nativeMicBytes = 1920 * 4 * 4
 	nativeRefBytes = 1920 * 2 * 2
-	aspFrameBudget = 25 * time.Millisecond
+	aspFrameBudget = 5 * time.Second
 	aspStartBudget = 500 * time.Millisecond
 )
 
