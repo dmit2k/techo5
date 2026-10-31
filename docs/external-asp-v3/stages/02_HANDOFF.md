@@ -134,7 +134,7 @@ All tests are codec component/offline; no whole application Stage02 ARM32/Androi
 
 **Observed:** `fatal: could not read Username for 'https://github.com': No such device or address` (**exit 128**). Because the command was first in a `set -e` pair, the C push was **not attempted**. Host has no Git HTTPS credential helper, no `gh` binary, and SSH to `git@github.com` was rejected with `Permission denied (publickey)`. The connected GitHub API returned 404 for both Stage02 refs. Local commits and all worktrees remain intact. No reset/rebase/force-push or branch deletion performed.
 
-**Actual remediation (completed):** `build host` has a working GitHub CLI session for `dmit2k` and SSH access to `validation host`. The coordinator checked frozen main/dev-main and absence of the stage refs, fetched original Git objects to temporary isolated bare repositories over SSH, verified ancestry and exact candidate commit IDs, then performed these pushes from the core host:
+**Actual remediation (completed):** `build host` has a working GitHub CLI session for `dmit2k` and SSH access to `validation host`. The coordinator checked frozen main/dev-main and absence of the stage refs, fetched original Git objects to temporary isolated bare repositories over SSH, verified ancestry and exact candidate commit IDs, then performed these pushes from the authorized build environment:
 
 ```sh
 git -C <isolated-core-go.git> -c credential.helper='!gh auth git-credential' push https://github.com/dmit2k/techo5.git 78a01f897b89dd462576e6e617fbc8216c4518dd:refs/heads/experimental/external-asp-v3-dev-stage02
