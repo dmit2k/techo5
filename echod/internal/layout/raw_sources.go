@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"os"
+	"strings"
 )
 
 // RawSource is an unmodified source value and the name of the actual source.
@@ -31,8 +32,9 @@ func rawIdentitySources(read func(string) ([]byte, error)) []RawSource {
 }
 
 // RawFactorySources enumerates the existing /proc/idme and DT-IDME raw values.
-// Only if neither exports any field and the existing Athena-mainline fallback is
-// in use does it read the same original boot area as stock (without parseIdme).
+// On Athena-mainline, stock falls back to eMMC independently for every
+// absent field. Merge missing original boot-area fields even when /proc
+// exports some fields, preserving the /proc values when both are present.
 // Call at initialization, not on the real-time capture loop.
 func RawFactorySources() []RawSource {
 	return rawFactorySources(os.ReadDir, os.ReadFile, AthenaMainline())
@@ -61,9 +63,26 @@ func rawFactorySources(list func(string) ([]os.DirEntry, error),
 			}
 		}
 	}
-	if len(out) == 0 && bootFallback {
+	if bootFallback {
+		// The stock Idme path uses eMMC fallback per missing key, not only
+		// when the whole /proc tree is empty. Source names stay explicit.
+		present := make(map[string]bool, len(out))
+		for _, src := range out {
+			switch {
+			case strings.HasPrefix(src.Source, "/proc/idme/"):
+				present[strings.TrimPrefix(src.Source, "/proc/idme/")] = true
+			case strings.HasPrefix(src.Source, "/proc/device-tree/idme/") && strings.HasSuffix(src.Source, "/value"):
+				name := strings.TrimSuffix(strings.TrimPrefix(src.Source, "/proc/device-tree/idme/"), "/value")
+				present[name] = true
+			}
+		}
 		if b, err := read("/dev/mmcblk0boot1"); err == nil {
-			out = rawBootIDMESources(b)
+			for _, src := range rawBootIDMESources(b) {
+				key := strings.TrimPrefix(src.Source, "/dev/mmcblk0boot1/")
+				if !present[key] {
+					out = append(out, src)
+				}
+			}
 		}
 	}
 	return out
