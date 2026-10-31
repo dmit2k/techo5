@@ -2,7 +2,7 @@
 
 ## 1. Stage identity, gates and statuses
 
-- Task: **Stage03-R — remove External metadata plumbing; preserve universal native capture**, 2026-10-31 (Europe/Riga), execution on `anfisa-trainer` through Desktop Commander and direct trainer SSH Git.
+- Task: **Stage03-R — remove External metadata plumbing; preserve universal native capture**, 2026-10-31 (Europe/Riga), execution on `validation host` through authorized terminal tools and direct validation host SSH Git.
 - Normative: `PCM_ONLY_ARCHITECTURE_DECISION.md`, `MASTER_CONTRACT.md`, `EXECUTION_BRANCH_STRATEGY.md`, `SPEC_V2_APPROVED.md` §§3–5,8–9 and `stages/03_NATIVE_PRIVACY_TASK.md`.
 - Gate: **Stage02-R Execution PASS / independent technical acceptance ACCEPTED / Integration COMPLETE**, verified in current coordinator-published `stages/02_PCM_ONLY_CORRECTION_HANDOFF.md`.
 - Docs staging HEAD: `4130606cf09cba0d8a5fbc1f288195c0582816d4`; current approved SPEC blob: `f3e1b00d1f5d184e345c0d2c79da8394435ba3a4`.
@@ -18,7 +18,7 @@
 | Input accepted integration | `15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc` | `77149e6494ac9784d98464ff984c84887a28ced9` |
 | Accepted output dev-main (coordinator verified) | **`b0c0d5fa96576eff8f7497d48e39fa30a5348e76` (FF)** | **`77149e6494ac9784d98464ff984c84887a28ced9` unchanged** |
 | Stage branch | `experimental/external-asp-v3-dev-stage03-pcmonly` | **none, unchanged** |
-| Worktree | `/home/gptlab/dev/techo5-v3-stage03-pcmonly` | none |
+| Worktree | `${WORKSPACE}/techo5-v3-stage03-pcmonly` | none |
 | Tested / published candidate | **`b0c0d5fa96576eff8f7497d48e39fa30a5348e76`** | **`77149e6494ac9784d98464ff984c84887a28ced9` unchanged** |
 | Frozen main | `62603a7854283a3a07473a17c831c6ef0fd6f8d4` | `e986ae18643e08e95f29a38aae1dd74762f6362e` |
 | Accepted SHA (delegated technical review, not a verbatim owner declaration) | **`b0c0d5fa96576eff8f7497d48e39fa30a5348e76`** | **`77149e6494ac9784d98464ff984c84887a28ced9`** |
@@ -69,9 +69,9 @@ All tests use only fake capture backends and synthetic fixtures. The complete de
 
 ## 5. Tests, build tags, logs, source SHA and limits
 
-- Working directory `/home/gptlab/dev/techo5-v3-stage03-pcmonly/echod`; Go `go version go1.26.0 linux/amd64`. `GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS=-p=1 GOMAXPROCS=2`, toolchain `/home/gptlab/.local/toolchains/go/bin`.
+- Working directory `${WORKSPACE}/techo5-v3-stage03-pcmonly/echod`; Go `go version go1.26.0 linux/amd64`. `GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS=-p=1 GOMAXPROCS=2`, toolchain `${HOME}/.local/toolchains/go/bin`.
 - Code source commit identity `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`. Production code is identical across both Stage03-R commits; the second commit adds synthetic tests only. The matrix was initiated before the final two commits while source edits were being applied, so the original `environment.txt` records the starting HEAD, **not** a finished-SHA test identity; final focused/race/vet logs below explicitly recheck the clean committed tree.
-- Matrix command runner `/home/gptlab/dev/techo5-v3-stage03-pcmonly-matrix.sh`, full raw ledger `/home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/results.tsv`. Logs and generated binaries reside in `/home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031`. Each line of the ledger is the actual command and exit; no inferred PASS.
+- Matrix command runner `${WORKSPACE}/techo5-v3-stage03-pcmonly-matrix.sh`, full raw ledger `${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/results.tsv`. Logs and generated binaries reside in `${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031`. Each line of the ledger is the actual command and exit; no inferred PASS.
 
 | Check | Exit | Exact executed command | Evidence SHA256 |
 |---|---:|---|---|
@@ -80,20 +80,20 @@ All tests use only fake capture backends and synthetic fixtures. The complete de
 | `vet` | `0` | `go vet ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy ./internal/asp ./internal/lib/alsa` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `go-c` | `0` | `go test -count=1 ./internal/asp` | `a4a9194546c2640a3087bfd86807ccb35525301cdff48b0ae0888db50f60ffcc` |
 | `full-default` | `0` | `go test -count=1 -parallel 1 ./...` | `0f6a4b4ec0ac3a01773283ce9df76412227a461cfa3a60717c6060ad741520f6` |
-| `build-default` | `0` | `go build -o /home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/echod-default ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `build-default` | `0` | `go build -o ${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/echod-default ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `test-dot` | `0` | `go test -count=1 -parallel 1 -tags dot ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy ./internal/asp` | `5c447223ba49657f3fd1926d03875ba33df4d3a8427e133668c10d08e44b9ab7` |
 | `compile-dot` | `0` | `go test -run \^\$ -parallel 1 -tags dot ./...` | `7471c9bd57d0bf7f87d96e57a5805d185d2babe8f91435b615e0817c94a582eb` |
-| `build-dot` | `0` | `go build -tags dot -o /home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/echod-dot ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `build-dot` | `0` | `go build -tags dot -o ${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/echod-dot ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `test-dot-donut` | `0` | `go test -count=1 -parallel 1 -tags dot\,donut ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy ./internal/asp` | `6819b98b8d247bc8bdb915959ca0ad9c1fab71dde67ebc8199b35e9a5e90e729` |
 | `compile-dot-donut` | `0` | `go test -run \^\$ -parallel 1 -tags dot\,donut ./...` | `1cd00b1d39c5d74cb4794af7fe6b0f60b56079f333e5ca7e70e9e7ce81531ecb` |
-| `build-dot-donut` | `0` | `go build -tags dot\,donut -o /home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/echod-dot-donut ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `build-dot-donut` | `0` | `go build -tags dot\,donut -o ${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/echod-dot-donut ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `test-spot` | `0` | `go test -count=1 -parallel 1 -tags spot ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy ./internal/asp` | `550abd32b8e2220bbd7c81665a607449a4ce333823f20a9f195aa43ab26c6aad` |
 | `compile-spot` | `0` | `go test -run \^\$ -parallel 1 -tags spot ./...` | `5a64cb6cca86300cf6191d54db3de6844d12741fd1478203a631a26e32026ef8` |
-| `build-spot` | `0` | `go build -tags spot -o /home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/echod-spot ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `build-spot` | `0` | `go build -tags spot -o ${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/echod-spot ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `test-panel` | `0` | `go test -count=1 -parallel 1 -tags panel ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy ./internal/asp` | `270f590114001a6908e710e4d371100fcdbdb2b844f2c525d6cec43e69246b25` |
 | `compile-panel` | `0` | `go test -run \^\$ -parallel 1 -tags panel ./...` | `e764f94a3329fe0ffd459adff75a87ed7ac263ec9991998510055176d6a41e6d` |
-| `build-panel` | `0` | `go build -tags panel -o /home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/echod-panel ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
-| `armv7` | `0` | `env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o /home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/echod-armv7 ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `build-panel` | `0` | `go build -tags panel -o ${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/echod-panel ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `armv7` | `0` | `env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o ${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/echod-armv7 ./cmd/echod` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 
 ### Additional post-commit exact-SHA checks
 
@@ -104,15 +104,15 @@ All tests use only fake capture backends and synthetic fixtures. The complete de
 | `final-sha-vet.log` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
 | `final-sha-go-c.log` | `bd44f0b8aef95785ea8f5687df460be944c1f9467529ab7cd3e17c4608d2f9a3` |
 
-- Go/C codec checked with `ASP_C_DECODER=/home/gptlab/dev/frankenasp-v3-stage02-pcmonly/build/codec_probe` from accepted C02-R, **without changing C sources**.
-- Test log SHA256 manifest: `/home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/LOG_SHA256SUMS`; binary SHA256 manifest: `/home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/BUILD_SHA256SUMS`.
+- Go/C codec checked with `ASP_C_DECODER=${WORKSPACE}/frankenasp-v3-stage02-pcmonly/build/codec_probe` from accepted C02-R, **without changing C sources**.
+- Test log SHA256 manifest: `${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/LOG_SHA256SUMS`; binary SHA256 manifest: `${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/BUILD_SHA256SUMS`.
 - Android NDK/Bionic vendor runtime, factory Calibrator, real PCM geometry and real Echos were **not executed/verified**. ARMv7 is a cross-build proof, not a device deployment. No Stage04 helper/runtime/secure launch, live pipe exchange, HA mode or External output activation was implemented.
 - No new platform whitelist, MIC4/REF2/96k admission, Q30/gain masks, metadata/provider abstraction, old CFG2 or dual codec.
 - No STOP/blockers observed in measured software matrix. Unsupported plain native layouts explicitly fail for an attempted native consumer instead of inventing a descriptor; ordinary stock path remains unaffected.
 
 ## 6. Remote publication, clean ref post-check and coordinator handoff
 
-Remote refs verified after direct trainer SSH push:
+Remote refs verified after direct validation host SSH push:
 
 | Ref | SHA |
 |---|---|
@@ -123,19 +123,19 @@ Remote refs verified after direct trainer SSH push:
 | C `main` | `e986ae18643e08e95f29a38aae1dd74762f6362e` |
 | C `experimental/v3-dev-main` | `77149e6494ac9784d98464ff984c84887a28ced9` |
 
-This document is generated **outside** code/docs checkout at `/home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/03_PCM_ONLY_CORRECTION_HANDOFF.md`, intended for docs coordinator publication to `docs/external-asp-v3/stages/03_PCM_ONLY_CORRECTION_HANDOFF.md` on `experimental/v3-design-staging`. The code executor has not committed to docs, integrated Stage03-R into either dev-main or touched any protected main.
+This document is generated **outside** code/docs checkout at `${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/03_PCM_ONLY_CORRECTION_HANDOFF.md`, intended for docs coordinator publication to `docs/external-asp-v3/stages/03_PCM_ONLY_CORRECTION_HANDOFF.md` on `experimental/v3-design-staging`. The code executor has not committed to docs, integrated Stage03-R into either dev-main or touched any protected main.
 
 **Historical executor gate:** Stage04 was blocked at the point the executor delivered the original report. **Updated coordinator gate:** independent Stage03-R technical **ACCEPTED**, Go dev-main integration **COMPLETE**, and published docs acceptance recorded here in §7. Stage04 can start under its own task, without hardware/Echo actions.
 
 ## 7. Independent coordinator review, acceptance and verified integration (2026-10-31)
 
-**Original executor evidence:** SHA256 of the untouched, 128-line handoff at `/home/gptlab/dev/techo5-v3-stage03-pcmonly-evidence-20261031/03_PCM_ONLY_CORRECTION_HANDOFF.md` is `97686dd5ac9b99a6aa5accd4e2446cf5c4415b0715a7ab764c8abb31ea5376ad`. Original output was a published stage branch with acceptance/integration PENDING. The pre-integration remote refs, test matrix and limitations in §§2–6 are historical executor snapshots; the accepted integration facts are recorded below.
+**Original executor evidence:** SHA256 of the untouched, 128-line handoff at `${WORKSPACE}/techo5-v3-stage03-pcmonly-evidence-20261031/03_PCM_ONLY_CORRECTION_HANDOFF.md` is `97686dd5ac9b99a6aa5accd4e2446cf5c4415b0715a7ab764c8abb31ea5376ad`. Original output was a published stage branch with acceptance/integration PENDING. The pre-integration remote refs, test matrix and limitations in §§2–6 are historical executor snapshots; the accepted integration facts are recorded below.
 
 **Decision: ACCEPTED**, based on independent review against PCM-only `PCM_ONLY_ARCHITECTURE_DECISION.md`, `MASTER_CONTRACT.md`, `SPEC_V2_APPROVED.md` and `stages/03_NATIVE_PRIVACY_TASK.md`. The reviewer verified the six-file diff from T02-R, including deletion of External-only `layout/raw_sources.go`, `raw_sources_test.go` and `raw_sources_partial_fallback_test.go`. No replacement External source reader was introduced. Stock `layout.Idme/readIDME/idmeFallback`, MAC/Color and capture implementation remain intact. `NativeBlock.Descriptor()` is PCM geometry only. Unknown ALSA formats, channel roles or widths are not guessed; requesting optional native access returns an error on unknown layouts while stock-only Read remains available. Hardware REF stereo L/R and paired raw samples remain borrowed and byte-exact; a single SoftwareCut decision still gates native and stock paths.
 
 **Test provenance:** executor matrix 19/19 exit=0 plus final committed SHA focused/race/vet/Go↔C PASS; hashes `LOG_SHA256SUMS` (27) and `BUILD_SHA256SUMS` (6) independently verified. Coordinator additionally re-ran on committed `b0c0d5fa96576eff8f7497d48e39fa30a5348e76` focused MIC/layout/privacy/asp tests, `go test -race` on the same four packages, `go vet` on MIC/layout/privacy/asp/alsa, and a complete `go test -count=1 -parallel 1 ./...` with the accepted compiled C02-R probe — all PASS. No claim of independent rerun of all tagged or target-device tests; executor evidence covers default/dot/dot+donut/spot/panel and ARMv7 cross-build.
 
-**Integration receipt:** input refs TECHO5 dev-main `15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc`, Stage03-R stage ref `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, FrankenASP dev-main `77149e6494ac9784d98464ff984c84887a28ced9`, documentation branch prior HEAD `4130606cf09cba0d8a5fbc1f288195c0582816d4`. From clean worktrees, after remote ref/ancestry and test checks, coordinator performed exactly one TECHO5 `git merge --ff-only b0c0d5fa96576eff8f7497d48e39fa30a5348e76` and `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main` on `anfisa-trainer`, verified remote integration Go SHA equals T03-R. C dev-main was not moved, no empty C stage branch or C commit was created. Protected Go main `62603a7854283a3a07473a17c831c6ef0fd6f8d4`, C main `e986ae18643e08e95f29a38aae1dd74762f6362e` unchanged; worktrees clean. No force, rebase, reset, device access or old handoff rewrite.
+**Integration receipt:** input refs TECHO5 dev-main `15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc`, Stage03-R stage ref `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, FrankenASP dev-main `77149e6494ac9784d98464ff984c84887a28ced9`, documentation branch prior HEAD `4130606cf09cba0d8a5fbc1f288195c0582816d4`. From clean worktrees, after remote ref/ancestry and test checks, coordinator performed exactly one TECHO5 `git merge --ff-only b0c0d5fa96576eff8f7497d48e39fa30a5348e76` and `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main` on `validation host`, verified remote integration Go SHA equals T03-R. C dev-main was not moved, no empty C stage branch or C commit was created. Protected Go main `62603a7854283a3a07473a17c831c6ef0fd6f8d4`, C main `e986ae18643e08e95f29a38aae1dd74762f6362e` unchanged; worktrees clean. No force, rebase, reset, device access or old handoff rewrite.
 
 **Final accepted Stage04 input pair:** **Go T03-R `b0c0d5fa96576eff8f7497d48e39fa30a5348e76` / FrankenASP C02-R `77149e6494ac9784d98464ff984c84887a28ced9`**.
 

@@ -58,8 +58,8 @@ Codec поддерживает **описание**, не DSP работу вс�
 
 ## Worktrees, commits и handoff
 
-- Go: `/home/gptlab/dev/techo5-v3-stage02-pcmonly`, `experimental/external-asp-v3-dev-stage02-pcmonly` от T03.
-- C: `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly`, `experimental/v3-stage02-pcmonly` от C02.
+- Go: `${WORKSPACE}/techo5-v3-stage02-pcmonly`, `experimental/external-asp-v3-dev-stage02-pcmonly` от T03.
+- C: `${WORKSPACE}/frankenasp-v3-stage02-pcmonly`, `experimental/v3-stage02-pcmonly` от C02.
 - Отдельные локальные commits codec+tests в каждом repo. Stage push только по поручению; integration refs не менять, docs branch не merge.
 - Приёмка conformance согласованной парой T_candidate/C_candidate; она не называется runtime gate. После отдельной приёмки/integration записать T02/C02.
 

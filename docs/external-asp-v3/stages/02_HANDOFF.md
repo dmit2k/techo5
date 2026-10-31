@@ -5,14 +5,14 @@
 ## 1. Identity, authority and statuses
 
 - Stage: **02 — Descriptor Codec & Go/C Conformance**, `stages/02_DESCRIPTOR_CODEC_TASK.md`.
-- Execution date/time: **2026-10-31, Europe/Riga**; host `anfisa-trainer`; executor **ChatGPT Stage02 Executor**.
+- Execution date/time: **2026-10-31, Europe/Riga**; host `validation host`; executor **ChatGPT Stage02 Executor**.
 - Normative docs HEAD: `dmit2k/techo5:experimental/v3-design-staging` at `77536bdcd15519eab7d28c0dab2ea5d44f060591`.
 - Exact approved SPEC blob: `b324d2161e5ea316618f23bbe6d6aedf6c2df5c8`.
 - Stage01 `stages/01_HANDOFF.md`: execution PASS, **owner ACCEPTED**, bootstrap integration COMPLETE, with previously documented limitations.
 - **Codec component checks C01–C07: PASS** (all tested on final local Go/C candidate commits).
-- **Overall Stage02 execution: PASS (2026-10-31)**. C01–C07 were completed on the exact Go/C candidate commits. Initial HTTPS/SSH push from `anfisa-trainer` failed, but delivery blocker was **resolved** by transferring the original Git objects via SSH to authorized `gptlab-core` and pushing the unchanged commits with its existing GitHub CLI authentication. Both remote stage refs and unchanged main/dev-main refs were independently verified. Focused Go↔compiled C and C codec tests were also re-run successfully after publication.
+- **Overall Stage02 execution: PASS (2026-10-31)**. C01–C07 were completed on the exact Go/C candidate commits. Initial HTTPS/SSH push from `validation host` failed, but delivery blocker was **resolved** by transferring the original Git objects via SSH to authorized `build host` and pushing the unchanged commits with its existing GitHub CLI authentication. Both remote stage refs and unchanged main/dev-main refs were independently verified. Focused Go↔compiled C and C codec tests were also re-run successfully after publication.
 - **Acceptance: ACCEPTED (delegated technical decision, 2026-10-31).** The owner requested independent analysis and a decision («мы можем принять Stage 02? анализ и принятие решения! ТЫ должна вести меня через реализацию согласованного проекта!»). Acting in the entrusted coordinator/reviewer role, a fresh review accepted the exact Go/C codec pair within Stage02 scope. This does not assert that the owner personally uttered «принимаю Stage02». Independent tests were rerun: C `make test` and `make sanitize` PASS; Go `go test -race -count=1 ./internal/asp`, `go vet ./internal/asp`, and stock `go test -count=1 ./internal/hardware/mic ./internal/layout` PASS; both copies of `SHA256SUMS` verified.
-- **Integration: COMPLETE (2026-10-31)**. Both code dev-main refs fast-forwarded to the exact accepted Stage02 candidate SHAs by documentation/integration coordinator using direct SSH push from `anfisa-trainer`. GitHub remote `main`, both dev-main, both Stage02 refs, and clean worktrees verified. Stage03 may begin under its separate assignment from this accepted pair.
+- **Integration: COMPLETE (2026-10-31)**. Both code dev-main refs fast-forwarded to the exact accepted Stage02 candidate SHAs by documentation/integration coordinator using direct SSH push from `validation host`. GitHub remote `main`, both dev-main, both Stage02 refs, and clean worktrees verified. Stage03 may begin under its separate assignment from this accepted pair.
 - Software gate: **codec component only**, not paired runtime/Source or hardware.
 - Hardware, Echo deployment, acoustic measurement and vendor DSP runtime on Echo: **НЕ ВЫПОЛНЕНЫ**.
 
@@ -24,7 +24,7 @@
 | Accepted T01/C01 input integration SHA | `62603a7854283a3a07473a17c831c6ef0fd6f8d4` | `e986ae18643e08e95f29a38aae1dd74762f6362e` |
 | Integration branch | `experimental/external-asp-v3-dev-main` | `experimental/v3-dev-main` |
 | New Stage02 branch | `experimental/external-asp-v3-dev-stage02` | `experimental/v3-stage02` |
-| Worktree | `/home/gptlab/dev/techo5-v3-stage02` | `/home/gptlab/dev/frankenasp-v3-stage02` |
+| Worktree | `${WORKSPACE}/techo5-v3-stage02` | `${WORKSPACE}/frankenasp-v3-stage02` |
 | Local Stage02 commits | `78a01f897b89dd462576e6e617fbc8216c4518dd` | `0081a6dc9bc5b9a235af38f7f87ffbbcbcd553ad`, then `0f39216a5240306344af7c2457716f4eaa466f40` |
 | Tested local candidate SHA | **`78a01f897b89dd462576e6e617fbc8216c4518dd`** | **`0f39216a5240306344af7c2457716f4eaa466f40`** |
 | Published Stage02 SHA | **`78a01f897b89dd462576e6e617fbc8216c4518dd`**, verified remote | **`0f39216a5240306344af7c2457716f4eaa466f40`**, verified remote |
@@ -40,7 +40,7 @@ Historical stage-publication snapshot (before the separate, subsequently complet
 - TECHO5 main/dev-main: `62603a7854283a3a07473a17c831c6ef0fd6f8d4`.
 - C main/dev-main: `e986ae18643e08e95f29a38aae1dd74762f6362e`.
 - Documentation design-staging: `77536bdcd15519eab7d28c0dab2ea5d44f060591`.
-- During the initial failed push, GitHub returned **404 Not Found** for the not-yet-created stage refs. After authenticated publication via `gptlab-core`, both remote refs exist with the exact tested local SHAs. No force, reset, rebase, merge, main or dev-main write occurred; the only separate docs write is this coordinator handoff publication.
+- During the initial failed push, GitHub returned **404 Not Found** for the not-yet-created stage refs. After authenticated publication via `build host`, both remote refs exist with the exact tested local SHAs. No force, reset, rebase, merge, main or dev-main write occurred; the only separate docs write is this coordinator handoff publication.
 
 ## 3. Binary contract, raw metadata, readiness
 
@@ -94,23 +94,23 @@ Prohibited areas unchanged: `mic.Source`, capture backends, stock PCM conversion
 
 ## 5. Test evidence C01–C07, exact commands and results
 
-Environment on `anfisa-trainer`:
-`export PATH=/home/gptlab/.local/toolchains/go/bin:$PATH GOMAXPROCS=2 GOFLAGS=-p=1 ASP_C_DECODER=/home/gptlab/dev/frankenasp-v3-stage02/build/codec_probe`.
+Environment on `validation host`:
+`export PATH=${HOME}/.local/toolchains/go/bin:$PATH GOMAXPROCS=2 GOFLAGS=-p=1 ASP_C_DECODER=${WORKSPACE}/frankenasp-v3-stage02/build/codec_probe`.
 
 Toolchains: **Go 1.26.0 linux/amd64**, **GCC 13.3.0**, **Python 3.12.3**, native offline Linux amd64. Tests run on exact local candidate pair above. The authoritative complete command/exit/log ledger is `/tmp/asp-v3-stage02-final-matrix.tsv` (**SHA256 `3031112c5c1a59637c05a8b4d781fcb56f0fb4789884d3b33563fed4f381a9f4`**).
 
 | Test ID | Working directory | Exact command | Exit | Evidence |
 |---|---|---|---|---|
-| C07 C build | `/home/gptlab/dev/frankenasp-v3-stage02` | `make clean && make all` | **0 PASS** | `/tmp/asp-v3-stage02-C07_C_BUILD.log` |
+| C07 C build | `${WORKSPACE}/frankenasp-v3-stage02` | `make clean && make all` | **0 PASS** | `/tmp/asp-v3-stage02-C07_C_BUILD.log` |
 | C01/C02/C04/C05/C06 C conformance | C worktree | `make test` | **0 PASS** | `/tmp/asp-v3-stage02-C01_C04_C06_C_TEST.log` |
 | C06 ASan+UBSan | C worktree | `make sanitize` | **0 PASS** | `/tmp/asp-v3-stage02-C06_ASAN_UBSAN.log` |
-| C01/C02/C03 paired Go writer → compiled C decoder | `/home/gptlab/dev/techo5-v3-stage02/echod` | `go test -count=1 -v ./internal/asp` | **0 PASS** | `/tmp/asp-v3-stage02-C01_C02_C03_GO_C.log` |
+| C01/C02/C03 paired Go writer → compiled C decoder | `${WORKSPACE}/techo5-v3-stage02/echod` | `go test -count=1 -v ./internal/asp` | **0 PASS** | `/tmp/asp-v3-stage02-C01_C02_C03_GO_C.log` |
 | C06 Go race | Go echod directory | `go test -race -count=1 ./internal/asp` | **0 PASS** | `/tmp/asp-v3-stage02-C06_GO_RACE.log` |
 | C06 Go vet | Go echod directory | `go vet ./internal/asp` | **0 PASS** | `/tmp/asp-v3-stage02-C06_GO_VET.log` |
 | C07 Go build | Go echod directory | `go build ./internal/asp` | **0 PASS** | `/tmp/asp-v3-stage02-C07_GO_BUILD.log` |
 | C07 Go test executable | Go echod directory | `go test -c -o /tmp/techo5-v3-stage02-asp.test ./internal/asp` | **0 PASS** | `/tmp/asp-v3-stage02-C07_GO_TEST_BINARY.log` |
 | C07 stock regression | Go echod directory | `go test -count=1 ./internal/hardware/mic ./internal/layout` | **0 PASS** | `/tmp/asp-v3-stage02-C07_STOCK_MIC_LAYOUT.log` |
-| C07 manifest/hash consistency | C worktree | `cmp -s testdata/SHA256SUMS /home/gptlab/dev/techo5-v3-stage02/echod/internal/asp/testdata/SHA256SUMS && (cd testdata && sha256sum -c SHA256SUMS)` | **0 PASS** | `/tmp/asp-v3-stage02-C07_MANIFEST_COMPARE.log` |
+| C07 manifest/hash consistency | C worktree | `cmp -s testdata/SHA256SUMS ${WORKSPACE}/techo5-v3-stage02/echod/internal/asp/testdata/SHA256SUMS && (cd testdata && sha256sum -c SHA256SUMS)` | **0 PASS** | `/tmp/asp-v3-stage02-C07_MANIFEST_COMPARE.log` |
 
 **Detailed cases:** seven independently specified valid binary descriptors; S16LE, S24_3LE, S32LE, signed24 low/high, packed 20-bit, channel order, one or three physical buffers, REF absent, separated REF, interleaved stereo REF, named raw values with NUL/high-bit bytes and absent/zero-length sources. Raw factory fixture 12082 descriptor bytes (12,000 raw bytes). Seven unaligned pointer C decodes pass. Forty-one malformed/truncated cases **reject with precise C exit 2** under both normal and ASan/UBSan builds; no sanitizer crash is accepted as a valid rejection. Invalid cases include magic CFG2, version, header/section/count mismatches, reserved bytes, PCM formats/bits/shifts, bad offsets/gaps/overlaps, roles/role-index continuity, sum overflow, last sample beyond physical length, duplicate or invalid raw source, oversized value/descriptor, and multiple truncated reads.
 
@@ -130,11 +130,11 @@ All tests are codec component/offline; no whole application Stage02 ARM32/Androi
 ## 6. Resolved delivery blocker: Stage02 stage branch push
 
 **Exact attempted command:**
-`git -C /home/gptlab/dev/techo5-v3-stage02 push origin refs/heads/experimental/external-asp-v3-dev-stage02:refs/heads/experimental/external-asp-v3-dev-stage02`.
+`git -C ${WORKSPACE}/techo5-v3-stage02 push origin refs/heads/experimental/external-asp-v3-dev-stage02:refs/heads/experimental/external-asp-v3-dev-stage02`.
 
 **Observed:** `fatal: could not read Username for 'https://github.com': No such device or address` (**exit 128**). Because the command was first in a `set -e` pair, the C push was **not attempted**. Host has no Git HTTPS credential helper, no `gh` binary, and SSH to `git@github.com` was rejected with `Permission denied (publickey)`. The connected GitHub API returned 404 for both Stage02 refs. Local commits and all worktrees remain intact. No reset/rebase/force-push or branch deletion performed.
 
-**Actual remediation (completed):** `gptlab-core` has a working GitHub CLI session for `dmit2k` and SSH access to `anfisa-trainer`. The coordinator checked frozen main/dev-main and absence of the stage refs, fetched original Git objects to temporary isolated bare repositories over SSH, verified ancestry and exact candidate commit IDs, then performed these pushes from the core host:
+**Actual remediation (completed):** `build host` has a working GitHub CLI session for `dmit2k` and SSH access to `validation host`. The coordinator checked frozen main/dev-main and absence of the stage refs, fetched original Git objects to temporary isolated bare repositories over SSH, verified ancestry and exact candidate commit IDs, then performed these pushes from the core host:
 
 ```sh
 git -C <isolated-core-go.git> -c credential.helper='!gh auth git-credential' push https://github.com/dmit2k/techo5.git 78a01f897b89dd462576e6e617fbc8216c4518dd:refs/heads/experimental/external-asp-v3-dev-stage02
@@ -147,10 +147,10 @@ Authentication failure was an **execution-environment issue**, not a descriptor 
 
 ## 6.1. Verified integration of the accepted pair (2026-10-31)
 
-The integration coordinator performed preflight from clean worktrees on `anfisa-trainer`, verified GitHub main/dev-main/stage refs against exact initial T01/C01 and accepted T02/C02 commits, and checked `git merge-base --is-ancestor` for both repositories (Go: one additional commit; C: two). **Only the two dev-main refs were moved**; no force, reset, squash, rebase or new integration commit.
+The integration coordinator performed preflight from clean worktrees on `validation host`, verified GitHub main/dev-main/stage refs against exact initial T01/C01 and accepted T02/C02 commits, and checked `git merge-base --is-ancestor` for both repositories (Go: one additional commit; C: two). **Only the two dev-main refs were moved**; no force, reset, squash, rebase or new integration commit.
 
-- Go: `git -C /home/gptlab/dev/techo5-v3-dev-main merge --ff-only 78a01f897b89dd462576e6e617fbc8216c4518dd` then `git -C /home/gptlab/dev/techo5-v3-dev-main push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main`. Actual remote FF: `62603a78..78a01f89`.
-- C: `git -C /home/gptlab/dev/frankenasp-v3-dev-main merge --ff-only 0f39216a5240306344af7c2457716f4eaa466f40` then `git -C /home/gptlab/dev/frankenasp-v3-dev-main push --porcelain origin HEAD:refs/heads/experimental/v3-dev-main`. Actual remote FF: `e986ae1..0f39216`.
+- Go: `git -C ${WORKSPACE}/techo5-v3-dev-main merge --ff-only 78a01f897b89dd462576e6e617fbc8216c4518dd` then `git -C ${WORKSPACE}/techo5-v3-dev-main push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main`. Actual remote FF: `62603a78..78a01f89`.
+- C: `git -C ${WORKSPACE}/frankenasp-v3-dev-main merge --ff-only 0f39216a5240306344af7c2457716f4eaa466f40` then `git -C ${WORKSPACE}/frankenasp-v3-dev-main push --porcelain origin HEAD:refs/heads/experimental/v3-dev-main`. Actual remote FF: `e986ae1..0f39216`.
 - Post-push `git ls-remote origin` verified Go dev-main **`78a01f897b89dd462576e6e617fbc8216c4518dd`**, C dev-main **`0f39216a5240306344af7c2457716f4eaa466f40`**, unchanged protected main **T01/C01**, and unchanged published Stage02 refs **T02/C02**. All code stage/dev-main and docs worktrees were clean.
 - **Result: Integration COMPLETE.** The input pair for Stage03 is T02/C02; Stage03 implementation is separately scoped and is not part of Stage02.
 
@@ -163,4 +163,4 @@ The integration coordinator performed preflight from clean worktrees on `anfisa-
 
 ## 8. Documentation publication boundary
 
-The original draft at `/home/gptlab/dev/v3-stage02-handoff/02_HANDOFF.md` was retained as historical evidence of the initial publication blocker. This completed report is published by the coordinator to `docs/external-asp-v3/stages/02_HANDOFF.md` on `experimental/v3-design-staging`. Stage02 **execution PASS**, delegated technical acceptance **ACCEPTED**, integration **COMPLETE**. Any later owner acceptance or integration must be recorded separately with actual verified SHAs; no future publication commit is invented inside this file.
+The original draft at `${WORKSPACE}/v3-stage02-handoff/02_HANDOFF.md` was retained as historical evidence of the initial publication blocker. This completed report is published by the coordinator to `docs/external-asp-v3/stages/02_HANDOFF.md` on `experimental/v3-design-staging`. Stage02 **execution PASS**, delegated technical acceptance **ACCEPTED**, integration **COMPLETE**. Any later owner acceptance or integration must be recorded separately with actual verified SHAs; no future publication commit is invented inside this file.

@@ -96,8 +96,8 @@ Fallback меняет Active на Built-in, сохраняет Selected=External
 Интеграция Go: `dmit2k/techo5:experimental/external-asp-v3-dev-main` от frozen T01 62603a7854283a3a07473a17c831c6ef0fd6f8d4. C: `dmit2k/frankenasp-v3:experimental/v3-dev-main`. Оба репозитория main никогда не получает V3-код.
 
 Кодовые этапы NN работают в отдельных worktrees:
-- TECHO5: `/home/gptlab/dev/techo5-v3-stageNN`, branch `experimental/external-asp-v3-dev-stageNN`;
-- C: `/home/gptlab/dev/frankenasp-v3-stageNN`, branch `experimental/v3-stageNN`.
+- TECHO5: `${WORKSPACE}/techo5-v3-stageNN`, branch `experimental/external-asp-v3-dev-stageNN`;
+- C: `${WORKSPACE}/frankenasp-v3-stageNN`, branch `experimental/v3-stageNN`.
 
 Начало correction этапов **только от фактической последней интеграционной пары T03/C02** и последующих подтверждённых correction handoffs, а не от первоначальных баз Stage02. Исторические `stages/NN_HANDOFF.md` остаются неизменными; новые correction receipts отделяются от них. Не считать PASS тестов или наличие remote branch приёмкой владельца. Handoff содержит отдельно execution PASS/FAIL, acceptance PENDING/ACCEPTED и integration PENDING/COMPLETE. Следующий этап требует ACCEPTED + COMPLETE.
 
@@ -111,6 +111,6 @@ Stage executor делает локальные commits, возвращает о�
 
 Каждый этап выполняет свои tests; 07 объединяет доказательства и проверяет финальную пару, не заменяет локальные проверки. Software PASS требует builds/conformance/integration/race/security/stock; hardware/vendor runtime на Echo и акустика отдельно: **НЕ ВЫПОЛНЕНЫ**, пока владелец явно не поручит их.
 
-Никаких Echo operations, установки или запуска target binaries автоматически. Offline compiled tests выполняются на anfisa-trainer в тестовых каталогах без воздействия на устройства.
+Никаких Echo operations, установки или запуска target binaries автоматически. Offline compiled tests выполняются на validation host в тестовых каталогах без воздействия на устройства.
 
 При фактическом противоречии: STOP, точный file/symbol/SHA, нарушенный пункт, воспроизводимый сценарий, минимальное исправление и объяснение ограничения. Не менять скорректированную PCM-only архитектуру без нового решения владельца; при разночтении старых handoffs приоритет у новой поправки. Отсутствие toolchain — BLOCKED/FAIL соответствующей проверки, а не фиктивный PASS.

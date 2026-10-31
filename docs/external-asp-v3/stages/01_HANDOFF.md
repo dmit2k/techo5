@@ -22,7 +22,7 @@
 | Integration input / bootstrap SHA | **62603a7854283a3a07473a17c831c6ef0fd6f8d4** | **e986ae18643e08e95f29a38aae1dd74762f6362e** |
 | Previous accepted Stage handoff | Нет: первый stage | Нет: первый stage |
 | Stage branch | Не создавалась; detached verification | Не создавалась; detached verification |
-| Worktree | /home/gptlab/dev/techo5-v3-stage01 | /home/gptlab/dev/frankenasp-v3-stage01 |
+| Worktree | ${WORKSPACE}/techo5-v3-stage01 | ${WORKSPACE}/frankenasp-v3-stage01 |
 | Stage code commits | **Нет** (административное исключение) | **Нет** |
 | Tested candidate SHA | 62603a7854283a3a07473a17c831c6ef0fd6f8d4 | e986ae18643e08e95f29a38aae1dd74762f6362e |
 | Owner-accepted candidate SHA | **62603a7854283a3a07473a17c831c6ef0fd6f8d4** (Stage01 baseline accepted) | **e986ae18643e08e95f29a38aae1dd74762f6362e** (Stage01 baseline accepted) |
@@ -30,8 +30,8 @@
 | Remote main и integration verified | Оба == T01; 2026-10-31 | Оба == C01; 2026-10-31 |
 | Clean verification worktree | git status --short → пусто | git status --short → пусто |
 
-- **Документационный checkout:** /home/gptlab/dev/techo5-v3-design-staging, ветка experimental/v3-design-staging, исходный docs HEAD 06bb7e8a56ffd0406626d4f218f7dc796d799d03; до публикации чистый. Docs publish commit будет отдельным от этого input HEAD; намеренно не записан как «будущий SHA» внутрь самого файла.
-- **Integration checkouts:** /home/gptlab/dev/techo5-v3-dev-main и /home/gptlab/dev/frankenasp-v3-dev-main; их соответствующие HEAD T01/C01 и git status --short пустой.
+- **Документационный checkout:** ${WORKSPACE}/techo5-v3-design-staging, ветка experimental/v3-design-staging, исходный docs HEAD 06bb7e8a56ffd0406626d4f218f7dc796d799d03; до публикации чистый. Docs publish commit будет отдельным от этого input HEAD; намеренно не записан как «будущий SHA» внутрь самого файла.
+- **Integration checkouts:** ${WORKSPACE}/techo5-v3-dev-main и ${WORKSPACE}/frankenasp-v3-dev-main; их соответствующие HEAD T01/C01 и git status --short пустой.
 - **Before/after remote verification:** git ls-remote origin refs/heads/main refs/heads/experimental/external-asp-v3-dev-main (TECHO5) и git ls-remote origin refs/heads/main refs/heads/experimental/v3-dev-main (C) показали одинаковые frozen SHA при повторных проверках. Никакого продвижения, reset, force push, FF, merge или rebase не было.
 - **Ancestry:** локальные git merge-base --is-ancestor T01 experimental/external-asp-v3-dev-main, обратная проверка dev-main → T01 и аналогичные C01 ↔ experimental/v3-dev-main завершились exit 0; строго эквивалентные исходные точки.
 - **Fork main:** dmit2k/techo5:main=T01; **C main:** dmit2k/frankenasp-v3:main=C01. Локальный TECHO5 refs/heads/main в dev-main checkout отсутствует; проверены actual remote main и origin/main, совпадающие с T01. Это не заменяет remote verification.
@@ -95,18 +95,18 @@
 
 ## 5. Offline tests, builds, compiler readiness и evidence
 
-**Хост:** anfisa-trainer. Go toolchain /home/gptlab/.local/toolchains/go/bin/go, **go1.26.0** (не находится в default PATH). GCC Ubuntu **13.3.0-6ubuntu2~24.04.1**, Python **3.12.3**; make, pkg-config, readelf обнаружены. Нормативный echod/go.mod — go 1.26.0. ARM32 cross-GCC, Android NDK, Bionic vendor toolchain/libasp **недоступны** на этом хосте, не скачивались.
+**Хост:** validation host. Go toolchain ${HOME}/.local/toolchains/go/bin/go, **go1.26.0** (не находится в default PATH). GCC Ubuntu **13.3.0-6ubuntu2~24.04.1**, Python **3.12.3**; make, pkg-config, readelf обнаружены. Нормативный echod/go.mod — go 1.26.0. ARM32 cross-GCC, Android NDK, Bionic vendor toolchain/libasp **недоступны** на этом хосте, не скачивались.
 
 **Общее окружение всех успешных offline Go команд:**
 
 ~~~sh
-cd /home/gptlab/dev/techo5-v3-stage01/echod
-export PATH=/home/gptlab/.local/toolchains/go/bin:$PATH
+cd ${WORKSPACE}/techo5-v3-stage01/echod
+export PATH=${HOME}/.local/toolchains/go/bin:$PATH
 export GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local
 export GOMAXPROCS=2 GOFLAGS=-p=1
 ~~~
 
-| Check | Команда / target | Pair | Result | Evidence on anfisa-trainer |
+| Check | Команда / target | Pair | Result | Evidence on validation host |
 |---|---|---|---|---|
 | B01 | git ls-remote; git rev-parse; git merge-base --is-ancestor в обе стороны; git status --short | T01/C01 | **PASS**, exact refs, clean | §2; повторная remote проверка |
 | B02 | git show/diff; static source grep/inspection текущих mic/layout/service/consumers | T01/C01 | **PASS** stock inventory | §4 |

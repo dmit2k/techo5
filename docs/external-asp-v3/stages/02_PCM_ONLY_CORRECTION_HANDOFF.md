@@ -5,7 +5,7 @@
 - **Stage:** Stage02-R PCM-only descriptor correction; authoritative owner decision `PCM_ONLY_ARCHITECTURE_DECISION.md`, approved 2026-10-31.
 - **Execution:** **PASS**. The seven component gates C01–C07 passed; two correction branches are published and independently verified. Full app test status is shown exactly in the matrix below.
 - **Technical acceptance: ACCEPTED (independent coordinator review, 2026-10-31).** The owner has directed the coordinator to manage technical decisions and integration. This is a delegated technical decision; not a claim that the owner personally said “Stage02-R accepted”.
-- **Integration: COMPLETE (2026-10-31).** Both code dev-main refs were fast-forwarded directly from trainer to the exact reviewed PCM-only Go/C pair, and all remote SHAs and frozen main refs independently verified. Stage03-R can start only under its separate assignment; Stage04 remains blocked until Stage03-R acceptance/integration.
+- **Integration: COMPLETE (2026-10-31).** Both code dev-main refs were fast-forwarded directly from validation host to the exact reviewed PCM-only Go/C pair, and all remote SHAs and frozen main refs independently verified. Stage03-R can start only under its separate assignment; Stage04 remains blocked until Stage03-R acceptance/integration.
 - **Software gate:** PCM-only codec/component Go↔C; **not** live wire, vendor DSP, acoustic or hardware gate.
 - **Echo hardware, vendor runtime and acoustic tests:** **НЕ ВЫПОЛНЕНЫ**.
 - Docs input: `dmit2k/techo5:experimental/v3-design-staging` **8c8ab3ea3deba1b3799f016e5a4cb88b701065ea**; actual current `SPEC_V2_APPROVED.md` blob **f3e1b00d1f5d184e345c0d2c79da8394435ba3a4**. Historical Stage02/03 SHA are evidence only; PCM-only decision takes precedence.
@@ -19,7 +19,7 @@
 | Input accepted integration SHA | `4fb329cf789b156bbeb8d13da20b8c4bda70f108` (T03) | `0f39216a5240306344af7c2457716f4eaa466f40` (C02) |
 | Integration branch | `experimental/external-asp-v3-dev-main` | `experimental/v3-dev-main` |
 | Correction stage branch | `experimental/external-asp-v3-dev-stage02-pcmonly` | `experimental/v3-stage02-pcmonly` |
-| Worktree | `/home/gptlab/dev/techo5-v3-stage02-pcmonly` | `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly` |
+| Worktree | `${WORKSPACE}/techo5-v3-stage02-pcmonly` | `${WORKSPACE}/frankenasp-v3-stage02-pcmonly` |
 | Tested and committed candidate | **`15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc`** | **`77149e6494ac9784d98464ff984c84887a28ced9`** |
 | Published remote stage SHA | **`15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc`** | **`77149e6494ac9784d98464ff984c84887a28ced9`** |
 | Accepted tested candidate (delegated technical decision) | **`15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc`** | **`77149e6494ac9784d98464ff984c84887a28ced9`** |
@@ -27,7 +27,7 @@
 | Protected main (unchanged) | `62603a7854283a3a07473a17c831c6ef0fd6f8d4` | `e986ae18643e08e95f29a38aae1dd74762f6362e` |
 | Post-push worktree status | clean | clean |
 
-Exact paired conformance receipt is **T_candidate=15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc; C_candidate=77149e6494ac9784d98464ff984c84887a28ced9**. Direct `git push --porcelain origin HEAD:refs/heads/<correction-branch>` was executed on anfisa-trainer using existing repo-scoped SSH keys. Both remote stage refs verified by `git ls-remote`. The executor performed no merge/FF, reset, rebase, force push, GitHub commit recreation, docs edits or device operations. **Subsequently** the coordinator performed two explicitly authorized FF-only integration updates, documented in §9; no force/rebase/device actions.
+Exact paired conformance receipt is **T_candidate=15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc; C_candidate=77149e6494ac9784d98464ff984c84887a28ced9**. Direct `git push --porcelain origin HEAD:refs/heads/<correction-branch>` was executed on validation host using existing repo-scoped SSH keys. Both remote stage refs verified by `git ls-remote`. The executor performed no merge/FF, reset, rebase, force push, GitHub commit recreation, docs edits or device operations. **Subsequently** the coordinator performed two explicitly authorized FF-only integration updates, documented in §9; no force/rebase/device actions.
 
 ## 3. Exact PCM-only wire contract
 
@@ -118,33 +118,33 @@ M	tests/test_codec.py
 
 ## 6. C01–C07 tests, build matrix and evidence
 
-Host `anfisa-trainer`, toolchains Go 1.26.0 linux/amd64, GCC 13.3.0, Python 3.12.3. Commands run with:
+Host `validation host`, toolchains Go 1.26.0 linux/amd64, GCC 13.3.0, Python 3.12.3. Commands run with:
 ```sh
-export PATH=/home/gptlab/.local/toolchains/go/bin:$PATH
+export PATH=${HOME}/.local/toolchains/go/bin:$PATH
 export GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS=-p=1 GOMAXPROCS=2
-export ASP_C_DECODER=/home/gptlab/dev/frankenasp-v3-stage02-pcmonly/build/codec_probe
+export ASP_C_DECODER=${WORKSPACE}/frankenasp-v3-stage02-pcmonly/build/codec_probe
 ```
 
-Matrix script: `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-runner.sh`; corresponding execution logs and SHA256 manifest are in `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-20261031/`. Final reconciled ledger: `results-clean.tsv`; raw `results.tsv` retains the truth about duplicate invocations interrupted when Desktop Commander returned `upstream_unavailable`. Only one uninterrupted successful instance per test is claimed below. No interrupted invocation is silently presented as a test PASS.
+Matrix script: `${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-runner.sh`; corresponding execution logs and SHA256 manifest are in `${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-20261031/`. Final reconciled ledger: `results-clean.tsv`; raw `results.tsv` retains the truth about duplicate invocations interrupted when authorized terminal tools returned `upstream_unavailable`. Only one uninterrupted successful instance per test is claimed below. No interrupted invocation is silently presented as a test PASS.
 
 | Test | CWD | Exact command | Exit | Evidence |
 |---|---|---|---|---|
-| `c-compile` | `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly` | `make clean && make all` | **0** | `c-compile.log` |
-| `c-conformance` | `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly` | `make test` | **0** | `c-conformance.log` |
-| `c-sanitizers` | `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly` | `make sanitize` | **0** | `c-sanitizers.log` |
-| `c-fixture-manifest` | `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly` | `cd testdata && sha256sum -c SHA256SUMS` | **0** | `c-fixture-manifest.log` |
-| `go-c-exact` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -v ./internal/asp` | **0** | `go-c-exact.log` |
-| `go-race` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -race -count=1 -parallel 1 ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `go-race.log` |
-| `go-vet` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go vet ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/lib/alsa` | **0** | `go-vet.log` |
-| `go-stock` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `go-stock.log` |
-| `go-default-build` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go build -o '/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-20261031/echod-linux-amd64' ./cmd/echod` | **0** | `go-default-build.log` |
-| `go-armv7-build` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o '/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-20261031/echod-linux-armv7' ./cmd/echod` | **0** | `go-armv7-build.log` |
-| `tag-dot` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'dot' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-dot.log` |
-| `tag-dot-donut` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'dot,donut' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-dot-donut.log` |
-| `tag-spot` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'spot' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-spot.log` |
-| `tag-panel` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'panel' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-panel.log` |
-| `shared-manifest` | `/home/gptlab/dev/frankenasp-v3-stage02-pcmonly` | `cmp testdata/SHA256SUMS '/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod/internal/asp/testdata/SHA256SUMS' && diff -qr testdata '/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod/internal/asp/testdata'` | **0** | `shared-manifest.log` |
-| `go-all` | `/home/gptlab/dev/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 ./...` | **0** | `go-all.log` |
+| `c-compile` | `${WORKSPACE}/frankenasp-v3-stage02-pcmonly` | `make clean && make all` | **0** | `c-compile.log` |
+| `c-conformance` | `${WORKSPACE}/frankenasp-v3-stage02-pcmonly` | `make test` | **0** | `c-conformance.log` |
+| `c-sanitizers` | `${WORKSPACE}/frankenasp-v3-stage02-pcmonly` | `make sanitize` | **0** | `c-sanitizers.log` |
+| `c-fixture-manifest` | `${WORKSPACE}/frankenasp-v3-stage02-pcmonly` | `cd testdata && sha256sum -c SHA256SUMS` | **0** | `c-fixture-manifest.log` |
+| `go-c-exact` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -v ./internal/asp` | **0** | `go-c-exact.log` |
+| `go-race` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -race -count=1 -parallel 1 ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `go-race.log` |
+| `go-vet` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go vet ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/lib/alsa` | **0** | `go-vet.log` |
+| `go-stock` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `go-stock.log` |
+| `go-default-build` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go build -o '${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-20261031/echod-linux-amd64' ./cmd/echod` | **0** | `go-default-build.log` |
+| `go-armv7-build` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o '${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-20261031/echod-linux-armv7' ./cmd/echod` | **0** | `go-armv7-build.log` |
+| `tag-dot` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'dot' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-dot.log` |
+| `tag-dot-donut` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'dot,donut' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-dot-donut.log` |
+| `tag-spot` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'spot' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-spot.log` |
+| `tag-panel` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 -tags 'panel' ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy` | **0** | `tag-panel.log` |
+| `shared-manifest` | `${WORKSPACE}/frankenasp-v3-stage02-pcmonly` | `cmp testdata/SHA256SUMS '${WORKSPACE}/techo5-v3-stage02-pcmonly/echod/internal/asp/testdata/SHA256SUMS' && diff -qr testdata '${WORKSPACE}/techo5-v3-stage02-pcmonly/echod/internal/asp/testdata'` | **0** | `shared-manifest.log` |
+| `go-all` | `${WORKSPACE}/techo5-v3-stage02-pcmonly/echod` | `go test -count=1 -parallel 1 ./...` | **0** | `go-all.log` |
 
 - **C01**: Python independently derived exact byte fixtures; Go writer exact equality, compiled C decode transcripts, one-byte READY.
 - **C02**: S16/S24_3/S32, 24 signed low/high, physical buffer/channel order, three physical buffers, packed valid bits/shift/stride, REF absent.
@@ -153,7 +153,7 @@ Matrix script: `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-runner.sh`; 
 - **C05**: L/R distinct nonzero bytes and test-only roundtrip of complete stereo and separate physical PCM blocks; `max_255.bin` exactly 9196 bytes.
 - **C06**: C compiler strict warnings-as-errors; C ASan/UBSan and unaligned decoder; Go unit/race/vet. C failure cannot be credited as an ASan crash.
 - **C07**: both components compiled at exact candidate commits, Go and C fixtures manifest SHA256/contents equal, native Go default app build and ARMv7 cross-compile; focused stock/tag matrix.
-- **Postcommit verification**: `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-20261031/postcommit-c.log` and `postcommit-go-c.log` pass on actual committed SHA pair.
+- **Postcommit verification**: `${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-20261031/postcommit-c.log` and `postcommit-go-c.log` pass on actual committed SHA pair.
 - **Baseline status**: no observed new failures in focused stock tests or supported tag matrix. Full application `go test ./...` is tracked independently in `go-all.log` (no fake PASS).
 - Not run: Android NDK/Bionic vendor backend compilation, vendor DSP/launcher, hardware/real calibration, Echo, acoustic tests. Stage02-R is codec-only; no vendor DSP support claim.
 
@@ -164,11 +164,11 @@ Matrix script: `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-runner.sh`; 
 3. **Wire incompatibility intentional:** old 24-byte descriptor rejected; Go and C must be integrated as exact accepted pair before any runtime.
 4. **Full app suite:** PASS (exit 0); see ledger for actual state. Codec C01–C07 and stock-focused/tag tests passed.
 5. No secret credentials, proprietary vendor binaries or altered Git permissions committed.
-6. Transient Desktop Commander `upstream_unavailable` led to duplicated runner invocations; two duplicate full-suite children were explicitly terminated. The raw ledger records exit 143 for those duplicates; one surviving run is recorded separately. This is an execution-system artifact and not a source-code test failure.
+6. Transient authorized terminal tools `upstream_unavailable` led to duplicated runner invocations; two duplicate full-suite children were explicitly terminated. The raw ledger records exit 143 for those duplicates; one surviving run is recorded separately. This is an execution-system artifact and not a source-code test failure.
 
 ## 8. Coordinator publication / next gate
 
-- Prepared **outside all code/docs worktrees** as `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-20261031/02_PCM_ONLY_CORRECTION_HANDOFF.md`.
+- Prepared **outside all code/docs worktrees** as `${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-20261031/02_PCM_ONLY_CORRECTION_HANDOFF.md`.
 - Intended docs publication path: `docs/external-asp-v3/stages/02_PCM_ONLY_CORRECTION_HANDOFF.md` on `experimental/v3-design-staging`, by **documentation coordinator only**.
 - **Coordinator technical acceptance ACCEPTED; integration COMPLETE**. Both remote dev-main SHA were verified equal to the exact tested candidates, after original-SHA fast-forward. Stage03-R is now unblocked by its separate assignment. Stage04 remains prohibited until subsequent Stage03-R acceptance/integration.
 - This report began as an executor handoff (original SHA256 below), with acceptance/integration pending. This coordinator-published edition **includes the independent acceptance decision and actual integration receipt in §9**. The code executor did not change documentation ref.
@@ -183,8 +183,8 @@ Matrix script: `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-runner.sh`; 
 - TECHO5 `experimental/external-asp-v3-dev-main`: **`15b2f1f73106fb9149fcdfacbebe4335e2e6fbbc`** (fast-forward from `4fb329cf789b156bbeb8d13da20b8c4bda70f108`; one new commit).
 - FrankenASP V3 `experimental/v3-dev-main`: **`77149e6494ac9784d98464ff984c84887a28ced9`** (fast-forward from `0f39216a5240306344af7c2457716f4eaa466f40`; one new commit).
 - Both published correction stage refs remain at exactly these SHAs, both protected main refs remain at TECHO5 `62603a7854283a3a07473a17c831c6ef0fd6f8d4` and FrankenASP `e986ae18643e08e95f29a38aae1dd74762f6362e`. Docs/stage/integration worktrees verified clean at integration time.
-- Integration commands on `anfisa-trainer` were `git merge --ff-only <accepted SHA>` in each integration worktree followed by direct authorized `git push --porcelain origin HEAD:refs/heads/<corresponding-dev-main>`. Both remote refs verified by `git ls-remote`; no force, reset, cherry-pick, squash or additional code commit.
+- Integration commands on `validation host` were `git merge --ff-only <accepted SHA>` in each integration worktree followed by direct authorized `git push --porcelain origin HEAD:refs/heads/<corresponding-dev-main>`. Both remote refs verified by `git ls-remote`; no force, reset, cherry-pick, squash or additional code commit.
 
-**Original executor handoff SHA256:** `137ffce05c4fa9f032a21d41cf22ee82febc0b334a39e84a96801526913b4171`, preserved unchanged at `/home/gptlab/dev/techo5-v3-stage02-pcmonly-evidence-20261031/02_PCM_ONLY_CORRECTION_HANDOFF.md`. Historical report statements about PENDING dev-main capture the pre-coordinator snapshot; this section and the revised status table are authoritative final acceptance/integration facts.
+**Original executor handoff SHA256:** `137ffce05c4fa9f032a21d41cf22ee82febc0b334a39e84a96801526913b4171`, preserved unchanged at `${WORKSPACE}/techo5-v3-stage02-pcmonly-evidence-20261031/02_PCM_ONLY_CORRECTION_HANDOFF.md`. Historical report statements about PENDING dev-main capture the pre-coordinator snapshot; this section and the revised status table are authoritative final acceptance/integration facts.
 
 **Final gate:** Execution **PASS**; delegated technical acceptance **ACCEPTED**; integration **COMPLETE**. The exact **T02-R/C02-R** pair above is now the mandatory input to **Stage03-R**. No Stage03-R code was started by this acceptance; no Echo/vendor runtime or acoustics were exercised. **Stage04 remains blocked** until Stage03-R independent acceptance and integration.

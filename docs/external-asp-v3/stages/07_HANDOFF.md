@@ -4,7 +4,7 @@
 
 ## 1. Идентичность и статусы
 
-- TASK: `stages/07_SOFTWARE_ACCEPTANCE_TASK.md`, 2026-10-31 (Europe/Riga), исполнение на `anfisa-trainer` через Desktop Commander.
+- TASK: `stages/07_SOFTWARE_ACCEPTANCE_TASK.md`, 2026-10-31 (Europe/Riga), исполнение на `validation host` через authorized terminal tools.
 - **Published docs HEAD** `dmit2k/techo5:experimental/v3-design-staging`: **739a744e4f0b617453b88413c41ebdc51a5c0ecf**, local=remote, clean; **actual approved SPEC_V2_APPROVED.md blob** **f3e1b00d1f5d184e345c0d2c79da8394435ba3a4** (`git hash-object`=`git rev-parse HEAD:path`). Docs branch originated from clean T01 via docs commit `06bb7e8a56ffd0406626d4f218f7dc796d799d03`, parent frozen T01; historical first-docs SPEC blob c754947d… is not today's PCM-only authority.
 - Прочитаны EXECUTION_BRANCH_STRATEGY, MASTER_CONTRACT, PCM_ONLY_ARCHITECTURE_DECISION, TASK07, SPEC §§20–27, HANDOFF_TEMPLATE, принятый `stages/06_HANDOFF.md` §9, REQUIREMENTS_TRACEABILITY и Stage02-R/03-R/04/05 conformance/commands. Relevant AGENTS.md не обнаружен.
 - **Stage06 incoming gate:** Execution PASS / independent delegated technical **ACCEPTED** / Integration **COMPLETE** — coordinator decision, не вымышленная дословная декларация владельца. Remote SHA и clean worktrees подтверждены.
@@ -20,7 +20,7 @@
 | Integration ref | `experimental/external-asp-v3-dev-main` | `experimental/v3-dev-main` |
 | Input accepted / tested / unchanged output | **cce2f220aeab9835e10a7f7ab659f5ca390011e8** | **f6266907edb90e7c9c2f414e8e46e6f215a21b7b** |
 | Source tree SHA | 09f798b6d9515f5de7dc1e7e4d2fd235f268e995 | d79887b4cd9944759748dc83378204d34a7c8bf2 |
-| Detached Stage07 worktree | `/home/gptlab/dev/techo5-v3-stage07` | `/home/gptlab/dev/frankenasp-v3-stage07` |
+| Detached Stage07 worktree | `${WORKSPACE}/techo5-v3-stage07` | `${WORKSPACE}/frankenasp-v3-stage07` |
 | Stage07 branch / commits | none / none | none / none |
 | Protected main HEAD, unchanged | 62603a7854283a3a07473a17c831c6ef0fd6f8d4 | e986ae18643e08e95f29a38aae1dd74762f6362e |
 | Final status --porcelain | empty/clean | empty/clean |
@@ -36,7 +36,7 @@
 
 - Go `echod/internal/asp/testdata/SHA256SUMS` and C `testdata/SHA256SUMS` both SHA256 **9d26d6cca1e29b10f1abaee583da12ee918ea4252f16f70c3eb2c01531e1d2f4**, `cmp` identical and `sha256sum -c` correct cwd exit0; `readiness.bin` SHA256 6922e93e3827642ce4b883c756b31abf80036649d3614bf5fcb3adda43b8ea32 (one-byte READY 0xA5). PCM-only descriptor strictly 16+28×buffers+8×channels, no IDME/platform wire.
 - C compiled ELF64 mock runtime `build/runtime_mock` SHA256 **5c19a4ee07d25c6821aea43964a3f46ac966310e6ba5e461f97a3e344fdd244d**; `build/codec_probe` **423084acb8c414d8178b6ebfab39d3fcc40f61eab549f4fafebb585aa249cf3b**; `build/io_faults.so` **4724d98c4cf89fa15454a39ff0161c81b0f55b310a98d49a4bda17363bc9d4d3**; `build/test_alias_policy` **775481c1fb0e4752cf2a4b9f0e0409e9fd819fdb61a70ed20ff61edf6fae4a39**. Go `session_linux.go` is production code under `go test`; C linked with `-DASP_TEST_ONLY` to `tests/mock_vendor.c` (test-only ABI, not proprietary DSP). Independent codec and fault-injector compiled. No saved standalone Go test ELF claimed.
-- Toolchains: **go1.26.9 linux/amd64** (`/home/gptlab/dev/techo5-asp-p3-4a-arm32-build-20261027/toolchains/go1.26.9/bin`), native cc **13.3.0**, available ARM GCC cross **13.3.0**. Go runner `GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS=-p=2 GOMAXPROCS=2`; environment includes `ASP_STAGE05_C_MOCK`, `ASP_STAGE05_C_FAULTS`, `ASP_C_DECODER` pointing only to final C worktree `build` outputs.
+- Toolchains: **go1.26.9 linux/amd64** (`${WORKSPACE}/techo5-asp-p3-4a-arm32-build-20261027/toolchains/go1.26.9/bin`), native cc **13.3.0**, available ARM GCC cross **13.3.0**. Go runner `GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS=-p=2 GOMAXPROCS=2`; environment includes `ASP_STAGE05_C_MOCK`, `ASP_STAGE05_C_FAULTS`, `ASP_C_DECODER` pointing only to final C worktree `build` outputs.
 - **Fresh Stage07 Linux ARM32 TECHO5 / Bionic C helper / launcher production binary hashes do not exist:** STOP preceded S08 build; prior accepted Stage04–06 crossbuild hashes are historical evidence, not credited as Stage07. NDK Android arm64-v8a/armeabi-v7a builds NOT RUN.
 
 ## 4. Реальные изменения / LOC / architecture
@@ -61,7 +61,7 @@ Binary fixture bytes are not counted as text LOC. C `.gitignore` +1 other. No wh
 
 ## 5. Tests / build matrix (exact commands, cwd, exit)
 
-Evidence root `/home/gptlab/dev/techo5-v3-stage07-evidence-20261031`. Runner `run-stage07-software.sh`, exact execution ledger `results.tsv`, log files `logs/<id>.log`, SHA256 `receipts/LOGS-SHA256SUMS`. Go CWD `/home/gptlab/dev/techo5-v3-stage07/echod`, C CWD `/home/gptlab/dev/frankenasp-v3-stage07`, except fixture check CWD `.../frankenasp-v3-stage07/testdata`. All runs use exact pair above.
+Evidence root `${WORKSPACE}/techo5-v3-stage07-evidence-20261031`. Runner `run-stage07-software.sh`, exact execution ledger `results.tsv`, log files `logs/<id>.log`, SHA256 `receipts/LOGS-SHA256SUMS`. Go CWD `${WORKSPACE}/techo5-v3-stage07/echod`, C CWD `${WORKSPACE}/frankenasp-v3-stage07`, except fixture check CWD `.../frankenasp-v3-stage07/testdata`. All runs use exact pair above.
 
 | Gate | ID / exact executed command | Exit and evidence |
 |---|---|---|
@@ -92,7 +92,7 @@ Complete SHA256 checks `receipts/LOGS-SHA256SUMS` (13 files, including partial d
 - **Minimal fix proposal, no changes made:** in this test's `fakePlainCapture` use a `cfg` derived from `alsaConfig()` with `cfg.Channels = Channels` (for `stage06Stock()`), preserving MIC+REF mute assertion; alternatively use a MIC-only length based on `Mics` plus separate REF check. Stage06 replacement branch/review, rerun focused `dot`, complete all tagged/race tests and joint S01–S10, independently accept/integrate replacement pair. Do not edit production descriptor/geometry to make a broken test pass.
 - No new commits/branches prepared by Stage07.
 
-**BLOCKED-07-02, toolchain:** `.github/workflows/build.yml` requires pinned Android NDK 28.2.13676358/API26 and both Clang targets; neither SDK nor NDK present on `anfisa-trainer`. Minimal fix: provision verified toolchain and re-run actual Android `CGO_ENABLED=1` arm64-v8a and armeabi-v7a Panel ABI builds in verification-only worktrees, hash outputs. No Echo execution.
+**BLOCKED-07-02, toolchain:** `.github/workflows/build.yml` requires pinned Android NDK 28.2.13676358/API26 and both Clang targets; neither SDK nor NDK present on `validation host`. Minimal fix: provision verified toolchain and re-run actual Android `CGO_ENABLED=1` arm64-v8a and armeabi-v7a Panel ABI builds in verification-only worktrees, hash outputs. No Echo execution.
 
 **Other evidence findings:** initial fixture checksum launched in wrong CWD was corrected PASS (not a code defect); `descriptor_test.go` from Stage02-R lacks gofmt (formatting-only). Stock `service.Group` status/retry are older stock, not V3 status framework. C fixture mock/vendor resources do not prove real hardware qualification. No contradiction justified altering approved PCM-only architecture.
 
@@ -104,19 +104,19 @@ Complete SHA256 checks `receipts/LOGS-SHA256SUMS` (13 files, including partial d
 
 ## 8. Publication by docs coordinator
 
-- This executor report is `/home/gptlab/dev/techo5-v3-stage07-evidence-20261031/07_HANDOFF_EXECUTOR.md`, with evidence `results.tsv`, `logs/`, `receipts/FINAL-GIT-PAIR-TOOLCHAIN.txt`, `receipts/LOGS-SHA256SUMS`, `receipts/metrics.json`, `receipts/TRACEABILITY_STAGE07.md`. Check hashes/real outputs against exact remote refs.
+- This executor report is `${WORKSPACE}/techo5-v3-stage07-evidence-20261031/07_HANDOFF_EXECUTOR.md`, with evidence `results.tsv`, `logs/`, `receipts/FINAL-GIT-PAIR-TOOLCHAIN.txt`, `receipts/LOGS-SHA256SUMS`, `receipts/metrics.json`, `receipts/TRACEABILITY_STAGE07.md`. Check hashes/real outputs against exact remote refs.
 - Coordinator, not executor, may publish **actual FAIL / STOP** in `docs/external-asp-v3/stages/07_HANDOFF.md` on `dmit2k/techo5:experimental/v3-design-staging` after own independent review, via a new docs-only commit and remote postflight. No code integration ref changes.
 - Owner decision remains PENDING, docs publication SHA not invented; older 00:13 UTC stale report archived separately and must not be substituted for this report.
 
 ## 9. Независимая проверка координатора и распоряжение по дефектам — 2026-10-31
 
-**Итог: Stage07 SOFTWARE FAIL / STOP — техническая приёмка НЕ ПОЛУЧЕНА.** Owner acceptance PENDING. Никаких code FF/merges, новых stage commits или разрешения PR/аппаратных тестов. Исходный handoff исполнителя сохранён без изменений по адресу `/home/gptlab/dev/techo5-v3-stage07-evidence-20261031/07_HANDOFF_EXECUTOR.md`, SHA256 **`da44f0e4fa621fbc1a6f9c5af2244a11cb22b38b63b14415ffe2365b812fb965`**. Старый backup отчёта по отвергнутой паре в расчёт не принимался.
+**Итог: Stage07 SOFTWARE FAIL / STOP — техническая приёмка НЕ ПОЛУЧЕНА.** Owner acceptance PENDING. Никаких code FF/merges, новых stage commits или разрешения PR/аппаратных тестов. Исходный handoff исполнителя сохранён без изменений по адресу `${WORKSPACE}/techo5-v3-stage07-evidence-20261031/07_HANDOFF_EXECUTOR.md`, SHA256 **`da44f0e4fa621fbc1a6f9c5af2244a11cb22b38b63b14415ffe2365b812fb965`**. Старый backup отчёта по отвергнутой паре в расчёт не принимался.
 
 **Проверенные GitHub refs:** Go dev-main `cce2f220aeab9835e10a7f7ab659f5ca390011e8`, FrankenASP V3 C dev-main `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`, docs до данного коммита `739a744e4f0b617453b88413c41ebdc51a5c0ecf`; protected mains не изменены. Все stage07/dev-main/docs worktrees clean. Evidence `EVIDENCE-SHA256SUMS` и `receipts/LOGS-SHA256SUMS` перепроверены.
 
 **FAIL-07-01 (S07):** независимое воспроизведение на фактическом Go SHA командой `cd echod && go test -count=1 -parallel 1 -tags dot -run '^TestL07NativeSoftwareCutAndStockRaw$' ./internal/hardware/mic`: exit **1**, `asp_control_test.go:320: cut native capture failed mic: native geometry unavailable: mic: incomplete native capture frame: bytes=8640 stride=21`. Тест Stage06 создаёт raw по `FrameSamples*Channels*3`, но `alsaConfig()` в `native_test.go` объявляет `Mics` вместо `Channels`; для dot `Channels=9`, `Mics=7`. Production `plainNative` **правильно отвергает** неконсистентную геометрию. Минимальное исправление — Stage06 **test-only fixture**, не ослабление native validation. Диагностические focused прогоны `dot,donut`, `spot`, `panel` PASS, но полная S07 tagged-матрица всё ещё NOT RUN/NOT PASS. Первая диагностическая команда координатора ошибочно запущена не из `echod/` и завершилась `go.mod not found`; она не учитывается, повтор из правильного CWD выполнен.
 
-**BLOCKED-07-02 (S08):** для реальных Android Panel ABI arm64-v8a/armeabi-v7a нужен NDK `28.2.13676358`, API26, `GOOS=android CGO_ENABLED=1`, два Android Clang. На `anfisa-trainer` не найдены `sdkmanager`, NDK/SDK в проверенных стандартных местах и оба требуемых Android clang. Linux `-tags panel` или прошлые ARM32/Bionic binaries не заменяют S08. NDK/SDK не устанавливались, системные настройки не менялись.
+**BLOCKED-07-02 (S08):** для реальных Android Panel ABI arm64-v8a/armeabi-v7a нужен NDK `28.2.13676358`, API26, `GOOS=android CGO_ENABLED=1`, два Android Clang. На `validation host` не найдены `sdkmanager`, NDK/SDK в проверенных стандартных местах и оба требуемых Android clang. Linux `-tags panel` или прошлые ARM32/Bionic binaries не заменяют S08. NDK/SDK не устанавливались, системные настройки не менялись.
 
 **Порядок выхода из STOP:** (1) отдельная Stage06-S07 Go-only correction branch от текущего *опубликованного* Go `cce2f220`, full tagged/race/regression, независимая приёмка и FF только Go после ACCEPTED, публикация `stages/06_S07_CORRECTION_HANDOFF.md`; (2) верифицированный NDK toolchain; (3) новый полный Stage07 S01–S10 retake на новой принятой паре, с реальными Android бинарниками и отдельным `stages/07_RETAKE_HANDOFF.md`. Данный FAIL-handoff оставить исторически неизменным. Задания опубликованы в `06_S07_CORRECTION_PROMPT.md`, `07_SOFTWARE_ACCEPTANCE_RETAKE_PROMPT.md`; публикация не является разрешением автоматического запуска.
 

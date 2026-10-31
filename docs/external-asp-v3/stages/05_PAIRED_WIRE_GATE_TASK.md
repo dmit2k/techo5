@@ -44,14 +44,14 @@ V2 §§5–7, 11.5–11.6, 12–14, 16–17, 20.1–20.3, 20.6–20.9, 21–22; 
 | W09 | Relevant Go race tests, codec/native tests и C tests; production TECHO5 Linux ARM32 и C production helper/launcher сборки из exact commits; hashes/toolchains |
 | W10 | Проверка absence CFG2/old helpers/compatibility/status/preflight/first-PCM/inode cache/new manager/async worker; mocks только test build |
 
-Tests используют isolated temporary trusted-root fixtures; не изменять настоящий /data и не запускать privileged C launcher на anfisa/Echo. Это проверяет host secure exec + compiled C IPC, а production native launcher/vendor execution остаётся явно hardware-unverified. Не требовать аппаратный запуск для software wire PASS.
+Tests используют isolated temporary trusted-root fixtures; не изменять настоящий /data и не запускать privileged C launcher на validation host/Echo. Это проверяет host secure exec + compiled C IPC, а production native launcher/vendor execution остаётся явно hardware-unverified. Не требовать аппаратный запуск для software wire PASS.
 
 Timed tests должны доказывать 5s total и >10s survival; допустимы bounded test clock seams без production time configurator, но минимум один compiled process тест подтверждает survival после фактических исходных 10s.
 
 ## Worktrees, Git и атомарность приёмки
 
-- Go: `/home/gptlab/dev/techo5-v3-stage05`, `experimental/external-asp-v3-dev-stage05` от T_in.
-- C: `/home/gptlab/dev/frankenasp-v3-stage05` detached C_in для сборок; branch `experimental/v3-stage05` только если реально нужны C code/test changes.
+- Go: `${WORKSPACE}/techo5-v3-stage05`, `experimental/external-asp-v3-dev-stage05` от T_in.
+- C: `${WORKSPACE}/frankenasp-v3-stage05` detached C_in для сборок; branch `experimental/v3-stage05` только если реально нужны C code/test changes.
 - Сделать локальные Go commits (и C при изменениях); затем пересобрать/проверить exact candidate commits без незакоммиченного code diff. Stage push только в пределах отдельного поручения, никаких автоматических main/dev-main merge.
 
 **Gate принимает пару T_candidate+C_candidate**, а не две независимые половины. Owner acceptance пары отдельно от execution PASS. Integration agent отдельным поручением продвигает changing refs, проверяет оба remote integration HEAD и заполняет T05/C05. Пока хотя бы один ref не проверен, integration PENDING и 06 запрещён. Документационная ветка в код не сливается.

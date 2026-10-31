@@ -2,9 +2,9 @@
 
 > Текст ниже готов к отправке целиком в новый Work-чат. Он разрешает этап только когда владелец отдельно отправит его как поручение; публикация пакета сейчас не является поручением.
 
-Выполни **только этап 05 TECHO5 / FrankenASP V3 — secure session и первый Go/C wire gate**. Используй Work и Desktop Commander на anfisa-trainer.
+Выполни **только этап 05 TECHO5 / FrankenASP V3 — secure session и первый Go/C wire gate**. Используй Work и authorized terminal tools на validation host.
 
-Сначала полностью прочитай в /home/gptlab/dev/techo5-v3-design-staging/docs/external-asp-v3/:
+Сначала полностью прочитай в ${WORKSPACE}/techo5-v3-design-staging/docs/external-asp-v3/:
 1. EXECUTION_BRANCH_STRATEGY.md.
 2. MASTER_CONTRACT.md и PCM_ONLY_ARCHITECTURE_DECISION.md.
 3. stages/05_PAIRED_WIRE_GATE_TASK.md.

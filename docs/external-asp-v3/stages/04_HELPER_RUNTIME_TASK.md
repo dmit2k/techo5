@@ -53,7 +53,7 @@
 
 ## Git и передача
 
-C worktree `/home/gptlab/dev/frankenasp-v3-stage04`, branch `experimental/v3-stage04` от C_in. TECHO5 не меняется: T_out=T_in, пустой Go stage04 не создавать. Локальные C commits для runtime/bridge/build/tests; stage push только по поручению; C experimental/v3-dev-main не обновлять автоматически.
+C worktree `${WORKSPACE}/frankenasp-v3-stage04`, branch `experimental/v3-stage04` от C_in. TECHO5 не меняется: T_out=T_in, пустой Go stage04 не создавать. Локальные C commits для runtime/bridge/build/tests; stage push только по поручению; C experimental/v3-dev-main не обновлять автоматически.
 
 Handoff по HANDOFF_TEMPLATE в `stages/04_HANDOFF.md` через docs coordinator: T04/C04, реальные modules/entrypoints, reproducible native и ARM32 команды, launch prerequisites, production vs mock binary identities, fixture digest, H01–H08, exact reuse/license map, неперенесённые legacy, ограничение «ещё не Go/C integration». Hardware НЕ ВЫПОЛНЕНЫ. Следующий — 05.
 

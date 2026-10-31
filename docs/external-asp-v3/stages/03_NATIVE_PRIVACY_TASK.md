@@ -48,7 +48,7 @@ T_in/C_in — output integration HEAD принятого `stages/02_PCM_ONLY_COR
 
 ## Git / результат
 
-Go worktree `/home/gptlab/dev/techo5-v3-stage03-pcmonly`, branch `experimental/external-asp-v3-dev-stage03-pcmonly` от нового T_in. C не изменяется, пустую stage03 не создавать, C_out=C_in. Коммиты только native/privacy/PCM geometry/tests; no integration push/merge. Stage push — в пределах поручения.
+Go worktree `${WORKSPACE}/techo5-v3-stage03-pcmonly`, branch `experimental/external-asp-v3-dev-stage03-pcmonly` от нового T_in. C не изменяется, пустую stage03 не создавать, C_out=C_in. Коммиты только native/privacy/PCM geometry/tests; no integration push/merge. Stage push — в пределах поручения.
 
 Отчёт HANDOFF_TEMPLATE → docs coordinator → `stages/03_PCM_ONLY_CORRECTION_HANDOFF.md`: новая пара, точные geometry/API contracts для 04/05/06, files, commands/results, input/output ownership доказательства, неперенесённые whitelist/CFG2/synthetic, upstream stock exceptions. Hardware НЕ ВЫПОЛНЕНЫ. Следующий этап 04.
 

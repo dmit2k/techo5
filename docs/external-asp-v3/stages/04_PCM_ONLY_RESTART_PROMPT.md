@@ -2,9 +2,9 @@
 
 **ЗАПРЕЩЕНО запускать до ACCEPTED + INTEGRATION COMPLETE по обоим PCM-only correction handoffs Stage02-R и Stage03-R.**
 
-Используй Desktop Commander на `anfisa-trainer` и GitHub. Прочитай `PCM_ONLY_ARCHITECTURE_DECISION.md`, `MASTER_CONTRACT.md`, `EXECUTION_BRANCH_STRATEGY.md`, `SPEC_V2_APPROVED.md` §§4–7,14,20.2–20.3, `stages/04_HELPER_RUNTIME_TASK.md`, `stages/02_PCM_ONLY_CORRECTION_HANDOFF.md`, `stages/03_PCM_ONLY_CORRECTION_HANDOFF.md`, `HANDOFF_TEMPLATE.md`. Проверить **фактические** remote Go/C dev-main SHA из последнего correction handoff; оба main frozen и worktrees clean. Не использовать старые T03/C02, если correction завершён.
+Используй authorized terminal tools на `validation host` и GitHub. Прочитай `PCM_ONLY_ARCHITECTURE_DECISION.md`, `MASTER_CONTRACT.md`, `EXECUTION_BRANCH_STRATEGY.md`, `SPEC_V2_APPROVED.md` §§4–7,14,20.2–20.3, `stages/04_HELPER_RUNTIME_TASK.md`, `stages/02_PCM_ONLY_CORRECTION_HANDOFF.md`, `stages/03_PCM_ONLY_CORRECTION_HANDOFF.md`, `HANDOFF_TEMPLATE.md`. Проверить **фактические** remote Go/C dev-main SHA из последнего correction handoff; оба main frozen и worktrees clean. Не использовать старые T03/C02, если correction завершён.
 
-Создать `experimental/v3-stage04` от нового C integration HEAD в `/home/gptlab/dev/frankenasp-v3-stage04` (STOP если branch/worktree уже существуют/заняты; не force). TECHO5 Go не менять.
+Создать `experimental/v3-stage04` от нового C integration HEAD в `${WORKSPACE}/frankenasp-v3-stage04` (STOP если branch/worktree уже существуют/заняты; не force). TECHO5 Go не менять.
 
 **Восстановить сохранённый рабочий factory-launcher contract:** FrankenASP launcher до child подготавливает verified vendor assets и разрешённые read-only IDME aliases `/proc/idme/miccal.N` на подлинные источники в контролируемом namespace; сохраняет trusted FD3 executable/FD4 assets, verified paths/ownership, mount isolation, Bionic child/runtime environment и безопасный exec. Применение/чтение calibration находится **только у vendor Calibrator**; launcher и TECHO5 не сериализуют factory values, не рассчитывают Q30/gain masks, не масштабируют PCM. Это частная реализация FrankenASP: другие helpers и host не обязаны иметь IDME. Отсутствие необходимых vendor ресурсов → *только helper* stderr/exit до READY, сохранение host Built-in.
 

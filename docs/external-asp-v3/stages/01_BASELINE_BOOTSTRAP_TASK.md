@@ -10,7 +10,7 @@
 
 ## Входные ревизии
 
-Docs checkout: `/home/gptlab/dev/techo5-v3-design-staging`, branch `experimental/v3-design-staging`. Определить опубликованный docs HEAD, прочитать strategy, MASTER_CONTRACT и этот TASK; проверить V2 blob `new SPEC blob to be pinned from the single clean-base documentation commit`.
+Docs checkout: `${WORKSPACE}/techo5-v3-design-staging`, branch `experimental/v3-design-staging`. Определить опубликованный docs HEAD, прочитать strategy, MASTER_CONTRACT и этот TASK; проверить V2 blob `new SPEC blob to be pinned from the single clean-base documentation commit`.
 
 Фиксированные чистые исходные точки:
 - fork main: `62603a7854283a3a07473a17c831c6ef0fd6f8d4`;
@@ -27,7 +27,7 @@ Docs checkout: `/home/gptlab/dev/techo5-v3-design-staging`, branch `experimental
 4. Проверить и зафиксировать, что TECHO5 main == T01 и FrankenASP V3 main == C01. Никаких FF, reset или продвижения main в Stage01–07.
 5. Создать TECHO5 integration experimental/external-asp-v3-dev-main строго от T01 после согласованного cleanup, worktree отдельно. Если ветка уже занята — STOP без reset.
 6. Создать FrankenASP V3 integration experimental/v3-dev-main строго от C01 после согласованного cleanup. Main не назначать integration ref, не использовать старый stage SHA.
-7. Для isolated baseline проверки создать **detached** worktrees `/home/gptlab/dev/techo5-v3-stage01` на T01 и `/home/gptlab/dev/frankenasp-v3-stage01` на C01. Не создавать пустые code stage01 refs.
+7. Для isolated baseline проверки создать **detached** worktrees `${WORKSPACE}/techo5-v3-stage01` на T01 и `${WORKSPACE}/frankenasp-v3-stage01` на C01. Не создавать пустые code stage01 refs.
 8. Зафиксировать stock geometry: MIC/REF buffers, rates/formats/valid bits/shift, conversion boundary, REF absent/stock soft reference, metadata source availability. Не запускать hardware readers на Echo.
 9. Определить доступные toolchains и точные offline команды по текущим go.mod/workflows и C reference build requirements. Для C здесь только readiness inventory, C-кода ещё нет. Private runtime/assets не скачивать, не копировать в Git, не запускать.
 10. Выполнить baseline Go tests/builds в проверяемом объёме; записать existing failures отдельно. Снять production LOC/files по T01 и C01 и ориентир старого reference отдельно, без искусственных «удалений».

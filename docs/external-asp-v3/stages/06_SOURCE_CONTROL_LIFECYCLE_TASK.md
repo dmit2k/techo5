@@ -55,7 +55,7 @@ Native API и metadata из 03, session/secure launch/Wait contract из 05 — 
 
 ## Git / handoff
 
-Go worktree `/home/gptlab/dev/techo5-v3-stage06`, branch `experimental/external-asp-v3-dev-stage06` от T_in. C worktree `/home/gptlab/dev/frankenasp-v3-stage06` detached C_in для joint tests. Если доказанно требуется C change, создать `stage06` от C_in и согласовать scope с этим TASK; вне scope — STOP, не расширять DSP.
+Go worktree `${WORKSPACE}/techo5-v3-stage06`, branch `experimental/external-asp-v3-dev-stage06` от T_in. C worktree `${WORKSPACE}/frankenasp-v3-stage06` detached C_in для joint tests. Если доказанно требуется C change, создать `stage06` от C_in и согласовать scope с этим TASK; вне scope — STOP, не расширять DSP.
 
 Локальные commits Source/control/lifecycle/tests, push stage refs только по поручению. Integration только отдельной owner acceptance **пары** T_candidate/C_candidate и поручением coordinator, даже когда C unchanged. До проверки обоих remote refs handoff integration PENDING. Docs branch не merge в code.
 

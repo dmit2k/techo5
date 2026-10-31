@@ -12,8 +12,8 @@
 
 ## Worktrees и Git
 
-- `/home/gptlab/dev/techo5-v3-stage07` detached T_final.
-- `/home/gptlab/dev/frankenasp-v3-stage07` detached C_final.
+- `${WORKSPACE}/techo5-v3-stage07` detached T_final.
+- `${WORKSPACE}/frankenasp-v3-stage07` detached C_final.
 - Отдельные build output directories вне tracked source; clean перед/после.
 - Не создавать пустые stage07 refs/commits. Code pair не меняется.
 - Найденный defect возвращается ответственному этапу с exact repro. Исправление требует принятой replacement pair в отдельных stage worktrees; не исправлять production скрыто в этой проверке. Затем повторить затронутые tests и финальный joint gate.

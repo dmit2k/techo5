@@ -2,7 +2,7 @@
 
 ## 1. Identity / status
 
-- Date: 2026-10-31 (Europe/Riga). Executor: Stage04 C executor on anfisa-trainer.
+- Date: 2026-10-31 (Europe/Riga). Executor: Stage04 C executor on validation host.
 - Task: docs/external-asp-v3/stages/04_HELPER_RUNTIME_TASK.md; owner PCM-only Stage04 restart assignment.
 - Authoritative docs ref: dmit2k/techo5 experimental/v3-design-staging, df2fc5e9633c1766a4f2921c44d9867e37c9d606.
 - Verified SPEC_V2_APPROVED.md blob: f3e1b00d1f5d184e345c0d2c79da8394435ba3a4.
@@ -20,14 +20,14 @@
 | Integration ref | experimental/external-asp-v3-dev-main | experimental/v3-dev-main |
 | Accepted input integration HEAD | b0c0d5fa96576eff8f7497d48e39fa30a5348e76 | 77149e6494ac9784d98464ff984c84887a28ced9 |
 | Stage04 branch | none; unchanged | experimental/v3-stage04 |
-| Stage04 worktree | none | /home/gptlab/dev/frankenasp-v3-stage04 |
+| Stage04 worktree | none | ${WORKSPACE}/frankenasp-v3-stage04 |
 | Stage04 commits | none | f6266907edb90e7c9c2f414e8e46e6f215a21b7b |
 | Tested, published stage candidate | unchanged b0c0d5fa96576eff8f7497d48e39fa30a5348e76 | f6266907edb90e7c9c2f414e8e46e6f215a21b7b |
 | Stage04 accepted candidate (delegated technical review) | b0c0d5fa96576eff8f7497d48e39fa30a5348e76 unchanged | **f6266907edb90e7c9c2f414e8e46e6f215a21b7b** |
 | Output integration HEAD (coordinator verified) | b0c0d5fa96576eff8f7497d48e39fa30a5348e76 unchanged | **f6266907edb90e7c9c2f414e8e46e6f215a21b7b** (C-only fast-forward) |
 | Verified remote main (frozen) | 62603a7854283a3a07473a17c831c6ef0fd6f8d4 | e986ae18643e08e95f29a38aae1dd74762f6362e |
 
-Direct SSH push from trainer: git push --porcelain origin HEAD:refs/heads/experimental/v3-stage04; output new branch (no force), remote GitHub stage ref equals f6266907edb90e7c9c2f414e8e46e6f215a21b7b. GitHub fetch_commit independently returned the same SHA and 27 changed files: https://github.com/dmit2k/frankenasp-v3/commit/f6266907edb90e7c9c2f414e8e46e6f215a21b7b.
+Direct SSH push from validation host: git push --porcelain origin HEAD:refs/heads/experimental/v3-stage04; output new branch (no force), remote GitHub stage ref equals f6266907edb90e7c9c2f414e8e46e6f215a21b7b. GitHub fetch_commit independently returned the same SHA and 27 changed files: https://github.com/dmit2k/frankenasp-v3/commit/f6266907edb90e7c9c2f414e8e46e6f215a21b7b.
 
 Remote Go/C main/dev-main SHAs were rechecked after publication with git ls-remote; same accepted pair and frozen main IDs as above. Historical executor snapshot: no merge, FF, reset, rebase, cherry-pick, force push, code/docs cross-repository write or device action. Subsequently coordinator performed an explicit C-only FF and documented it in §9.
 
@@ -49,7 +49,7 @@ Output pair **T04 = b0c0d5fa96576eff8f7497d48e39fa30a5348e76 (unchanged Go); C04
 
 ## 4. H01–H08 measured test receipts
 
-Evidence root **/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031**. All checked after actual C04 commit on clean worktree with source pair T04/C04 stated above. Commands are from /home/gptlab/dev/frankenasp-v3-stage04 except where stated.
+Evidence root **${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031**. All checked after actual C04 commit on clean worktree with source pair T04/C04 stated above. Commands are from ${WORKSPACE}/frankenasp-v3-stage04 except where stated.
 
 | ID | Executed assertion / command | Exit / measured result | Postcommit evidence SHA256 |
 |---|---|---|---|
@@ -59,7 +59,7 @@ Evidence root **/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031
 | H04 | make test: compiled child descriptor→0xA5→fixed 640 output; 7-byte fragmented writes; native LD_PRELOAD short syscalls and EINTR; startup/PCM EOF, truncated input, broken output pipe; stdout chatter isolated to stderr | 0 / PASS | same native log |
 | H05 | make test: independent ABI mock init/create/ref/process and failure scenarios, count/overrun canaries, terminal failures, destroy/deinit exactly once | 0 / PASS | same native log |
 | H06 | make asan; make ubsan, independently built codec + full mock C runtime, warnings-as-errors; source/link inventory and production mock-exclusion review | 0 / 0 PASS | postcommit-H06-asan.log c49f039ce755eec16d2e6693353252792dff5ab5205c94c36358be8bd21abe24; postcommit-H06-ubsan.log e14f22abe7f6e1d5a80310d6b78c8cc8208f8b00e71f147d4180194d8013f68d |
-| H07 | OUT_DIR=/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/bionic bash build_bionic.sh, with verified private ARM32 GCC, GNU linker and original Bionic libraries; OUT_DIR=/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/launcher bash build_launcher.sh with private ARM32 Linux sysroot; readelf ABI/INTERP/NEEDED | 0 / 0 PASS; real production binaries (not mock) | postcommit-H07-bionic.log c381875ea0233d90e24141412a6c92c486fd33f44758ec61d1c8206c443705c9; postcommit-H07-launcher.log dcdf17e782176515b5672668af2a6326e31879260e6f5e2a2f0ddd2ff5131248 |
+| H07 | OUT_DIR=${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/bionic bash build_bionic.sh, with verified private ARM32 GCC, GNU linker and original Bionic libraries; OUT_DIR=${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/launcher bash build_launcher.sh with private ARM32 Linux sysroot; readelf ABI/INTERP/NEEDED | 0 / 0 PASS; real production binaries (not mock) | postcommit-H07-bionic.log c381875ea0233d90e24141412a6c92c486fd33f44758ec61d1c8206c443705c9; postcommit-H07-launcher.log dcdf17e782176515b5672668af2a6326e31879260e6f5e2a2f0ddd2ff5131248 |
 | H08 | make test launcher source/security suite and compiled alias tests; H08-security-final.log reviews protected FD, private mounts, no old wire/control/installer, production source and strings/ELF dependency inventory; historical license and provenance in Git | 0 / PASS for source/offline boundary | native log above; H08-security-final.log separately included in LOG_SHA256SUMS |
 
 Additional PCM-only fixture receipt: (cd testdata && sha256sum -c SHA256SUMS) exit 0; cmp of C/Go manifests and diff -qr of fixture directories exit 0. Identical original fixture manifest SHA256 **9d26d6cca1e29b10f1abaee583da12ee918ea4252f16f70c3eb2c01531e1d2f4**. Postcommit fixture log SHA256 b2c29c181614052cfa88bd2d79444a70c0f6257fc19c8e4eccac4f9a13f76737; Go/C diff log (empty and exit 0) e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.
@@ -68,14 +68,14 @@ Authoritative postcommit measured log digest index: POSTCOMMIT_LOG_SHA256SUMS SH
 
 ## 5. H07 actual production binary and private toolchain provenance
 
-- Production child: /home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/bionic/asp1-child, SHA256 **86d4f4d7827129e944c76187dc4575ef7bc5240f2b99f048e7860ed71057fa05**. readelf: ELF32 little-endian ARM EABI5 soft-float, PIE DYN, interpreter /system/bin/linker, DT_NEEDED only libdl.so and libc.so. Vendor libasp.so resolved dynamically at runtime, not vendor bytes in Git; production linked src/vendor_factory.c, NOT tests/mock_vendor.c; binary strings contain no test mode, CFG2 or Q30.
-- Production launcher: /home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/launcher/asp1-launcher-arm32, SHA256 **fce1f3e1abc427d7e5402da5c56dd530d5bf2acd7686b4f3aba98d1445b24ab7**. readelf: native Linux ELF32 ARM EABI5 hard-float EXEC, static; no PT_INTERP, no DT_NEEDED.
+- Production child: ${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/bionic/asp1-child, SHA256 **86d4f4d7827129e944c76187dc4575ef7bc5240f2b99f048e7860ed71057fa05**. readelf: ELF32 little-endian ARM EABI5 soft-float, PIE DYN, interpreter /system/bin/linker, DT_NEEDED only libdl.so and libc.so. Vendor libasp.so resolved dynamically at runtime, not vendor bytes in Git; production linked src/vendor_factory.c, NOT tests/mock_vendor.c; binary strings contain no test mode, CFG2 or Q30.
+- Production launcher: ${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/launcher/asp1-launcher-arm32, SHA256 **fce1f3e1abc427d7e5402da5c56dd530d5bf2acd7686b4f3aba98d1445b24ab7**. readelf: native Linux ELF32 ARM EABI5 hard-float EXEC, static; no PT_INTERP, no DT_NEEDED.
 - Native codec probe (fixture test): SHA256 423084acb8c414d8178b6ebfab39d3fcc40f61eab549f4fafebb585aa249cf3b; native compiled independent ABI mock: SHA256 5c19a4ee07d25c6821aea43964a3f46ac966310e6ba5e461f97a3e344fdd244d. Production and mock source/link inventories are separate.
-- Private compiler ARM32 GCC 13.3.0 at /home/gptlab/dev/techo5-stock-audio-audit-20261021/arm32-tools/cross/usr/bin/arm-linux-gnueabihf-gcc-13, SHA256 73c40a8b836981da0da98dfae66073ed4b9d485cf786899d0c5ef3eeb311e548.
-- Private ARM32 GNU ld at /home/gptlab/dev/techo5-stock-audio-audit-20261021/arm32-tools/binutils-unpacked/usr/bin/arm-linux-gnueabihf-ld, SHA256 d15886a5fd7498e8f96a1977ce1b2bbcb2ab617174245d42d026cc2501354bb6.
-- Original owner Bionic runtime /home/gptlab/dev/techo5-stock-audio-audit-20261021/factory-arm32-root: libc.so SHA256 e637986bba4c5cc34fb8bf3f143c3b9665bfc6ab509cfd9517844ab87e2d4180; libdl.so SHA256 9807bc310d9d2bd366fc29219b6ce3f1e7e62; ld-android.so SHA256 cfd0e5b8dabe1e30680e3b59c2ab88578e3b2648d9fa96e7d120b143918e9032.
-- Linux ARM32 static build sysroot (private, not Git): /home/gptlab/dev/techo5-asp2-f2b-minimal-20261028/private/toolchain/sysroot. Binutils assembler wrapper /home/gptlab/dev/techo5-stock-audio-audit-20261021/arm32-tools/binutils-unpacked/usr/arm-linux-gnueabihf/bin.
-- Reproducible exact build variables: BIONIC_CC path above; BIONIC_LD path above; BIONIC_ROOT path above; LD_LIBRARY_PATH=$TC/binutils-unpacked/usr/lib/x86_64-linux-gnu; OUT_DIR=/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/bionic; bash build_bionic.sh. For launcher: ARM32_CC=BIONIC_CC; ARM32_BINUTILS=$TC/binutils-unpacked/usr/arm-linux-gnueabihf/bin; ARM32_SYSROOT=private Linux path above; OUT_DIR=/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/launcher; bash build_launcher.sh.
+- Private compiler ARM32 GCC 13.3.0 at ${WORKSPACE}/techo5-stock-audio-audit-20261021/arm32-tools/cross/usr/bin/arm-linux-gnueabihf-gcc-13, SHA256 73c40a8b836981da0da98dfae66073ed4b9d485cf786899d0c5ef3eeb311e548.
+- Private ARM32 GNU ld at ${WORKSPACE}/techo5-stock-audio-audit-20261021/arm32-tools/binutils-unpacked/usr/bin/arm-linux-gnueabihf-ld, SHA256 d15886a5fd7498e8f96a1977ce1b2bbcb2ab617174245d42d026cc2501354bb6.
+- Original owner Bionic runtime ${WORKSPACE}/techo5-stock-audio-audit-20261021/factory-arm32-root: libc.so SHA256 e637986bba4c5cc34fb8bf3f143c3b9665bfc6ab509cfd9517844ab87e2d4180; libdl.so SHA256 9807bc310d9d2bd366fc29219b6ce3f1e7e62; ld-android.so SHA256 cfd0e5b8dabe1e30680e3b59c2ab88578e3b2648d9fa96e7d120b143918e9032.
+- Linux ARM32 static build sysroot (private, not Git): ${WORKSPACE}/techo5-asp2-f2b-minimal-20261028/private/toolchain/sysroot. Binutils assembler wrapper ${WORKSPACE}/techo5-stock-audio-audit-20261021/arm32-tools/binutils-unpacked/usr/arm-linux-gnueabihf/bin.
+- Reproducible exact build variables: BIONIC_CC path above; BIONIC_LD path above; BIONIC_ROOT path above; LD_LIBRARY_PATH=$TC/binutils-unpacked/usr/lib/x86_64-linux-gnu; OUT_DIR=${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/bionic; bash build_bionic.sh. For launcher: ARM32_CC=BIONIC_CC; ARM32_BINUTILS=$TC/binutils-unpacked/usr/arm-linux-gnueabihf/bin; ARM32_SYSROOT=private Linux path above; OUT_DIR=${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/launcher; bash build_launcher.sh.
 - BUILD_SHA256SUMS (8 binary entries, including sanitizers) SHA256 f98bc5d5d7e636900ce64153cfefaba9b106f15f89f7851dc577a6dbc48052a4.
 - H07 is a production **crossbuild verification**, not proof of target firmware execute, vendor resource presence, linker success on an Echo or audible/acoustic correctness.
 
@@ -98,7 +98,7 @@ There is **no code-contract blocker in the tested C Stage04 component**. However
 
 ## 8. Coordinator publication and handoff gate
 
-The executor report resides outside code/docs worktrees at **/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/04_HANDOFF.md**. Intended coordinator destination (only after independent review): docs/external-asp-v3/stages/04_HANDOFF.md on dmit2k/techo5 experimental/v3-design-staging. The executor did **not** commit or push docs, advance Go/C dev-main or modify either protected main.
+The executor report resides outside code/docs worktrees at **${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/04_HANDOFF.md**. Intended coordinator destination (only after independent review): docs/external-asp-v3/stages/04_HANDOFF.md on dmit2k/techo5 experimental/v3-design-staging. The executor did **not** commit or push docs, advance Go/C dev-main or modify either protected main.
 
 Coordinator to check remote candidate C04 SHA f6266907edb90e7c9c2f414e8e46e6f215a21b7b against C integration 77149e6494ac9784d98464ff984c84887a28ced9 and unchanged Go b0c0d5fa96576eff8f7497d48e39fa30a5348e76, review H01–H08 and provenance, independently decide ACCEPTED/REJECTED, and conduct an explicitly authorized FF-only C integration if accepted. Only after coordinator has published an actual Stage04 ACCEPTED + INTEGRATION COMPLETE receipt may the next separate Stage05 prompt start. Real Echo/deploy/hardware tests remain separately unauthorized.
 
@@ -106,7 +106,7 @@ Coordinator to check remote candidate C04 SHA f6266907edb90e7c9c2f414e8e46e6f215
 
 ## 9. Independent coordinator acceptance and integration receipt (2026-10-31)
 
-Original unchanged executor handoff: `/home/gptlab/dev/frankenasp-v3-stage04-pcmonly-evidence-20261031/04_HANDOFF.md`, SHA256 `824fac2ba5869b8712471eb8209fe223bf16baaeba6d9ea0cd69fa4f996a0a0c`. Historical PENDING refs in the executor's snapshot are superseded by the current verified pair.
+Original unchanged executor handoff: `${WORKSPACE}/frankenasp-v3-stage04-pcmonly-evidence-20261031/04_HANDOFF.md`, SHA256 `824fac2ba5869b8712471eb8209fe223bf16baaeba6d9ea0cd69fa4f996a0a0c`. Historical PENDING refs in the executor's snapshot are superseded by the current verified pair.
 
 **Decision: Stage04 technical ACCEPTED**, strictly for software/C component H01–H08, not real vendor runtime. Reviewed secure factory launcher FD3 executable identity, FD4 root-owned deployment, component O_NOFOLLOW, mount namespace, read-only vendor assets and four private `/proc/idme/miccal.N` aliases without reading factory bytes; C child uses genuine six-function vendor ABI and PCM-only descriptor, real vendor initialization before READY, independent REF L/R, signed24 alignment, 768→128 DSP quanta, one-time 64 output samples, 640-byte fixed PCM. Factory-only admission does not add host platform restrictions.
 
@@ -114,6 +114,6 @@ Independent C replay: `make test`, `make asan`, `make ubsan` **PASS**. Postcommi
 
 **Independent H07 crossbuild:** coordinator rebuilt production Bionic child and native ARM32 static launcher using existing private ARM32 toolchain/Bionic libraries/Linux sysroot. Both outputs **byte-identical** to executor's originals: child SHA256 `86d4f4d7827129e944c76187dc4575ef7bc5240f2b99f048e7860ed71057fa05` and launcher SHA256 `fce1f3e1abc427d7e5402da5c56dd530d5bf2acd7686b4f3aba98d1445b24ab7`. Artifacts: `.../frankenasp-v3-stage04-pcmonly-evidence-20261031/coordinator-review-builds/`. No real launcher mount/chroot, vendor libasp.so, Echo, Calibrator or acoustic test performed or claimed.
 
-**C-only fast-forward integration:** clean preflight refs Go dev-main `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, C dev-main `77149e6494ac9784d98464ff984c84887a28ced9`, C stage ref `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`; one parent commit. Coordinator executed `git merge --ff-only f6266907edb90e7c9c2f414e8e46e6f215a21b7b` in `/home/gptlab/dev/frankenasp-v3-dev-main`, direct `git push --porcelain origin HEAD:refs/heads/experimental/v3-dev-main` from `anfisa-trainer`. Remote C dev-main and C stage ref both confirmed C04, Go dev-main unchanged. Protected main HEADs frozen at TECHO5 `62603a7854283a3a07473a17c831c6ef0fd6f8d4` and FrankenASP `e986ae18643e08e95f29a38aae1dd74762f6362e`. No force/reset/rebase/device changes; worktrees clean.
+**C-only fast-forward integration:** clean preflight refs Go dev-main `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, C dev-main `77149e6494ac9784d98464ff984c84887a28ced9`, C stage ref `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`; one parent commit. Coordinator executed `git merge --ff-only f6266907edb90e7c9c2f414e8e46e6f215a21b7b` in `${WORKSPACE}/frankenasp-v3-dev-main`, direct `git push --porcelain origin HEAD:refs/heads/experimental/v3-dev-main` from `validation host`. Remote C dev-main and C stage ref both confirmed C04, Go dev-main unchanged. Protected main HEADs frozen at TECHO5 `62603a7854283a3a07473a17c831c6ef0fd6f8d4` and FrankenASP `e986ae18643e08e95f29a38aae1dd74762f6362e`. No force/reset/rebase/device changes; worktrees clean.
 
 **Accepted Stage05 input: Go `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, C `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`.** Technical acceptance **ACCEPTED**, integration **COMPLETE**. Stage05 may begin its own paired Go/C wire/session implementation. Real vendor/target qualification remains explicitly not done.

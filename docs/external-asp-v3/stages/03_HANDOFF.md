@@ -3,7 +3,7 @@
 ## 1. Identity, authority, status
 
 - Stage: **03 — Native Capture, Raw Metadata & SoftwareCut**, normative `stages/03_NATIVE_PRIVACY_TASK.md`; Europe/Riga, 2026-10-31.
-- Executor: ChatGPT Stage03 code executor, directly on **anfisa-trainer** via Desktop Commander.
+- Executor: ChatGPT Stage03 code executor, directly on **validation host** via authorized terminal tools.
 - Docs authority: `dmit2k/techo5:experimental/v3-design-staging` at `66b91721315fdf0a7d9d9a3c13a9f9bad498f111`.
 - Approved SPEC blob: `b324d2161e5ea316618f23bbe6d6aedf6c2df5c8`, verified by `git rev-parse HEAD:docs/external-asp-v3/SPEC_V2_APPROVED.md`.
 - Prior accepted handoff: `docs/external-asp-v3/stages/02_HANDOFF.md`: execution PASS, technical acceptance ACCEPTED, integration COMPLETE.
@@ -22,7 +22,7 @@
 | Accepted input integration SHA | `78a01f897b89dd462576e6e617fbc8216c4518dd` | `0f39216a5240306344af7c2457716f4eaa466f40` |
 | Integration ref | `experimental/external-asp-v3-dev-main` | `experimental/v3-dev-main` |
 | Stage03 branch | `experimental/external-asp-v3-dev-stage03` | **NONE**, unchanged |
-| Worktree | `/home/gptlab/dev/techo5-v3-stage03` | no Stage03 worktree |
+| Worktree | `${WORKSPACE}/techo5-v3-stage03` | no Stage03 worktree |
 | Local candidate commit | `4fb329cf789b156bbeb8d13da20b8c4bda70f108` | **unchanged** `0f39216a5240306344af7c2457716f4eaa466f40` |
 | Candidate ancestry | T02 `78a01f897b89dd462576e6e617fbc8216c4518dd` → original Stage03 `3aebef58c7abce16764dbbb900c637efcd76e3c8` → accepted fix `4fb329cf789b156bbeb8d13da20b8c4bda70f108` | unchanged |
 | Published stage remote / clean worktree | **PASS: published SHA 4fb329cf789b156bbeb8d13da20b8c4bda70f108; clean** | **unchanged** |
@@ -75,7 +75,7 @@ All Stage03 native tests use **synthetic data only**; the original executor matr
 
 ### Executed commands/logs
 
-All tests run under `/home/gptlab/dev/techo5-v3-stage03/echod`, env `PATH=/home/gptlab/.local/toolchains/go/bin:$PATH; GOTOOLCHAIN=local; GOPROXY=off; GOSUMDB=off; GOFLAGS=-p=1; GOMAXPROCS=2`; native amd64 Linux. Test runner: `/home/gptlab/dev/techo5-v3-stage03-matrix-20261031.sh`; evidence dir: `/home/gptlab/dev/techo5-v3-stage03-evidence-20261031/`, `results.txt`, each `*.log`, `SHA256SUMS`, `BINARIES_SHA256SUMS`, `env.txt`.
+All tests run under `${WORKSPACE}/techo5-v3-stage03/echod`, env `PATH=${HOME}/.local/toolchains/go/bin:$PATH; GOTOOLCHAIN=local; GOPROXY=off; GOSUMDB=off; GOFLAGS=-p=1; GOMAXPROCS=2`; native amd64 Linux. Test runner: `${WORKSPACE}/techo5-v3-stage03-matrix-20261031.sh`; evidence dir: `${WORKSPACE}/techo5-v3-stage03-evidence-20261031/`, `results.txt`, each `*.log`, `SHA256SUMS`, `BINARIES_SHA256SUMS`, `env.txt`.
 
 - `go test -count=1 -parallel 1 ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy`
 - `go test -race -count=1 -parallel 1 ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy`
@@ -88,7 +88,7 @@ All tests run under `/home/gptlab/dev/techo5-v3-stage03/echod`, env `PATH=/home/
 
 ## 5. Git publication and protected refs
 
-- Direct SSH push from `anfisa-trainer` **only**: `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-stage03` with original Git object and configured `core.sshCommand`, existing repo-scoped deploy key, no intermediate hosts, no force.
+- Direct SSH push from `validation host` **only**: `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-stage03` with original Git object and configured `core.sshCommand`, existing repo-scoped deploy key, no intermediate hosts, no force.
 - Remote Stage03 SHA: **4fb329cf789b156bbeb8d13da20b8c4bda70f108 (verified after direct SSH push)**.
 - Protected Go main, C main, both dev-main and docs branch: **VERIFIED UNCHANGED AFTER PUSH** (exact refs below).
 - All three checked worktrees after push: **CLEAN** (TECHO5 Stage03, FrankenASP dev-main, docs staging).
@@ -111,27 +111,27 @@ All tests run under `/home/gptlab/dev/techo5-v3-stage03/echod`, env `PATH=/home/
 | `race` | `0` | `go test -race -count=1 -parallel 1 ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy ` |
 | `vet` | `0` | `go vet ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/lib/alsa ` |
 | `full-default` | `0` | `go test -count=1 -parallel 1 ./... ` |
-| `build-default` | `0` | `go build -o /home/gptlab/dev/techo5-v3-stage03-evidence-20261031/echod-linux-amd64 ./cmd/echod ` |
+| `build-default` | `0` | `go build -o ${WORKSPACE}/techo5-v3-stage03-evidence-20261031/echod-linux-amd64 ./cmd/echod ` |
 | `test-dot` | `0` | `go test -count=1 -parallel 1 -tags dot ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy ` |
 | `compile-dot` | `0` | `go test -run \^\$ -parallel 1 -tags dot ./... ` |
-| `build-dot` | `0` | `go build -tags dot -o /home/gptlab/dev/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-dot ./cmd/echod ` |
+| `build-dot` | `0` | `go build -tags dot -o ${WORKSPACE}/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-dot ./cmd/echod ` |
 | `test-dot-donut` | `0` | `go test -count=1 -parallel 1 -tags dot\,donut ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy ` |
 | `compile-dot-donut` | `0` | `go test -run \^\$ -parallel 1 -tags dot\,donut ./... ` |
-| `build-dot-donut` | `0` | `go build -tags dot\,donut -o /home/gptlab/dev/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-dot-donut ./cmd/echod ` |
+| `build-dot-donut` | `0` | `go build -tags dot\,donut -o ${WORKSPACE}/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-dot-donut ./cmd/echod ` |
 | `test-spot` | `0` | `go test -count=1 -parallel 1 -tags spot ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy ` |
 | `compile-spot` | `0` | `go test -run \^\$ -parallel 1 -tags spot ./... ` |
-| `build-spot` | `0` | `go build -tags spot -o /home/gptlab/dev/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-spot ./cmd/echod ` |
+| `build-spot` | `0` | `go build -tags spot -o ${WORKSPACE}/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-spot ./cmd/echod ` |
 | `test-panel` | `0` | `go test -count=1 -parallel 1 -tags panel ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy ` |
 | `compile-panel` | `0` | `go test -run \^\$ -parallel 1 -tags panel ./... ` |
-| `build-panel` | `0` | `go build -tags panel -o /home/gptlab/dev/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-panel ./cmd/echod ` |
-| `build-arm32` | `0` | `env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o /home/gptlab/dev/techo5-v3-stage03-evidence-20261031/echod-linux-arm32 ./cmd/echod ` |
+| `build-panel` | `0` | `go build -tags panel -o ${WORKSPACE}/techo5-v3-stage03-evidence-20261031/echod-linux-amd64-panel ./cmd/echod ` |
+| `build-arm32` | `0` | `env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o ${WORKSPACE}/techo5-v3-stage03-evidence-20261031/echod-linux-arm32 ./cmd/echod ` |
 
 ### Tested commit confirmation after publish
 
 - `git rev-parse HEAD` = `4fb329cf789b156bbeb8d13da20b8c4bda70f108`; parent `78a01f897b89dd462576e6e617fbc8216c4518dd`.
 - On published commit: `go test -count=1 -parallel 1 ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy`: **PASS**, `postcommit-focused.log`.
 - On published commit: `go test -race -count=1 -parallel 1 ./internal/hardware/mic ./internal/asp ./internal/layout ./internal/hardware/privacy`: **PASS**, `postcommit-race.log`.
-- On published commit with `ASP_C_DECODER=/home/gptlab/dev/frankenasp-v3-stage02/build/codec_probe`: `go test -count=1 ./internal/asp`: **PASS**, `postcommit-go-c.log`. No C repo or C sources changed.
+- On published commit with `ASP_C_DECODER=${WORKSPACE}/frankenasp-v3-stage02/build/codec_probe`: `go test -count=1 ./internal/asp`: **PASS**, `postcommit-go-c.log`. No C repo or C sources changed.
 - Detailed time-ordered matrix log checksums: `SHA256SUMS`; output binary checksums: `BINARIES_SHA256SUMS`.
 - SHA256 `postcommit-focused.log`: `432bb5d94e728ea29102b673679026c8326534e5b11044e696b2455397d71099`.
 - SHA256 `postcommit-race.log`: `f2c29a99666722f518b52bfe6dab2c557b0e3dbff51b27bee67bed15db5ff0dc`.
@@ -148,8 +148,8 @@ All tests run under `/home/gptlab/dev/techo5-v3-stage03/echod`, env `PATH=/home/
 | `dmit2k/frankenasp-v3:refs/heads/main` | `e986ae18643e08e95f29a38aae1dd74762f6362e` |
 | `dmit2k/frankenasp-v3:refs/heads/experimental/v3-dev-main` | `0f39216a5240306344af7c2457716f4eaa466f40` |
 
-- Remote C Stage03 refs were absent (no empty Stage03 branch). Direct origin push issued on trainer using SSH deploy key; GitHub API not used for commit, no gptlab-core relay and no force push.
-- Publication was limited to one TECHO5 Stage03 branch. Documentation staging was not modified. This report is prepared at `/home/gptlab/dev/techo5-v3-stage03-evidence-20261031/03_HANDOFF.md`; coordinator may publish it to `docs/external-asp-v3/stages/03_HANDOFF.md` only under separate authorized workflow.
+- Remote C Stage03 refs were absent (no empty Stage03 branch). Direct origin push issued on validation host using SSH deploy key; GitHub API not used for commit, no build host relay and no force push.
+- Publication was limited to one TECHO5 Stage03 branch. Documentation staging was not modified. This report is prepared at `${WORKSPACE}/techo5-v3-stage03-evidence-20261031/03_HANDOFF.md`; coordinator may publish it to `docs/external-asp-v3/stages/03_HANDOFF.md` only under separate authorized workflow.
 - Stage03 was accepted and fast-forward integrated at the corrected T03 SHA. Stage04 and External activation were NOT started by Stage03.
 
 ## 8. Coordinator independent review and integration receipt
@@ -158,8 +158,8 @@ All tests run under `/home/gptlab/dev/techo5-v3-stage03/echod`, env `PATH=/home/
 
 **Review finding and correction (N07):** on Athena-mainline, `rawFactorySources` initially read eMMC raw IDME only when /proc/DT exported no values at all. Stock `layout.Idme()` uses fallback per missing field. A new synthetic `TestN07PartialProcBootFallback` exposed a partial /proc serial and eMMC-only `miccal.0`; the test failed on the initial code because raw calibration was omitted. Correction `4fb329cf789b156bbeb8d13da20b8c4bda70f108` preserves any available proc/DT values, fills only missing raw IDs from the original boot-area bytes and retains source identity. No Go-side calibration interpretation, DSP compatibility decision, real hardware read during tests or Stage02 wire change.
 
-**Exact independent post-commit checks at T03/C02:** `go test -count=1 -parallel 1` on mic/asp/layout/privacy: PASS; `go test -race -count=1 -parallel 1` on these packages: PASS; `go vet` on mic/asp/layout/alsa: PASS; Go↔compiled C conformance with `ASP_C_DECODER=/home/gptlab/dev/frankenasp-v3-stage02/build/codec_probe`: PASS. Logs `/home/gptlab/dev/techo5-v3-stage03-review-evidence-20261031/acceptance-postcommit-*.log`, checksums `ACCEPTANCE_SHA256SUMS`. The original executor's full default and full build/tag matrix passed 18/18. The additional independent matrix completed 9/18 commands, **all nine PASS**, including full `go test ./...`, default/dot builds, dot+donut focused tests, race and vet; the redundant remaining tag tests were intentionally not repeated. Its results are in the separate review evidence directory. No unexecuted check is claimed PASS in the independent rerun.
+**Exact independent post-commit checks at T03/C02:** `go test -count=1 -parallel 1` on mic/asp/layout/privacy: PASS; `go test -race -count=1 -parallel 1` on these packages: PASS; `go vet` on mic/asp/layout/alsa: PASS; Go↔compiled C conformance with `ASP_C_DECODER=${WORKSPACE}/frankenasp-v3-stage02/build/codec_probe`: PASS. Logs `${WORKSPACE}/techo5-v3-stage03-review-evidence-20261031/acceptance-postcommit-*.log`, checksums `ACCEPTANCE_SHA256SUMS`. The original executor's full default and full build/tag matrix passed 18/18. The additional independent matrix completed 9/18 commands, **all nine PASS**, including full `go test ./...`, default/dot builds, dot+donut focused tests, race and vet; the redundant remaining tag tests were intentionally not repeated. Its results are in the separate review evidence directory. No unexecuted check is claimed PASS in the independent rerun.
 
-**Verified integration:** clean worktrees, original T02/C02 integration refs and corrected T03 stage ref were verified remotely before any update. Coordinator executed `git merge --ff-only 4fb329cf789b156bbeb8d13da20b8c4bda70f108` in `/home/gptlab/dev/techo5-v3-dev-main`, then direct trainer SSH `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main`, remotely verified target T03 and original Go main T01. FrankenASP dev-main stayed at C02, its main stayed at C01. Both stage refs/worktrees and docs worktree were checked clean, no force/rebase/squash/new C commit.
+**Verified integration:** clean worktrees, original T02/C02 integration refs and corrected T03 stage ref were verified remotely before any update. Coordinator executed `git merge --ff-only 4fb329cf789b156bbeb8d13da20b8c4bda70f108` in `${WORKSPACE}/techo5-v3-dev-main`, then direct validation host SSH `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main`, remotely verified target T03 and original Go main T01. FrankenASP dev-main stayed at C02, its main stayed at C01. Both stage refs/worktrees and docs worktree were checked clean, no force/rebase/squash/new C commit.
 
 **Accepted Stage03 pair**: T03 `4fb329cf789b156bbeb8d13da20b8c4bda70f108` / C03 unchanged `0f39216a5240306344af7c2457716f4eaa466f40`. **Execution: PASS; delegated technical acceptance: ACCEPTED; integration: COMPLETE.** No Echo/device/real ALSA/acoustic/vendor runtime evidence is claimed.

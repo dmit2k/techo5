@@ -4,7 +4,7 @@
 
 ## 1. Проверенный baseline на 2026-10-30, Europe/Riga
 
-Проверка выполнена через Desktop Commander на anfisa-trainer, без изменения code refs, сборок и выполнения тестов реализации.
+Проверка выполнена через authorized terminal tools на validation host, без изменения code refs, сборок и выполнения тестов реализации.
 
 | Объект | Проверенная ревизия | Назначение |
 |---|---|---|
@@ -87,13 +87,13 @@ Remote HEAD получены через git ls-remote. Объекты upstream �
 
 | ID | TECHO5 рабочее дерево / branch | C рабочее дерево / branch |
 |---|---|---|
-| 01 | `/home/gptlab/dev/techo5-v3-stage01` detached для baseline; будущая integration `/home/gptlab/dev/techo5-v3-dev-main` | `/home/gptlab/dev/frankenasp-v3-stage01` detached; репозиторий/основной checkout `/home/gptlab/dev/frankenasp-v3` |
-| 02 | `/home/gptlab/dev/techo5-v3-stage02`; `experimental/external-asp-v3-dev-stage02` | `/home/gptlab/dev/frankenasp-v3-stage02`; `stage02` |
-| 03 | `/home/gptlab/dev/techo5-v3-stage03`; `experimental/external-asp-v3-dev-stage03` | Нет пустой ветки; C_in только pin |
-| 04 | Нет пустой ветки; T_in только pin | `/home/gptlab/dev/frankenasp-v3-stage04`; `stage04` |
-| 05 | `/home/gptlab/dev/techo5-v3-stage05`; `experimental/external-asp-v3-dev-stage05` | Detached C_in для tests; `stage05` в отдельном C stage05 worktree только если меняется C code/tests |
-| 06 | `/home/gptlab/dev/techo5-v3-stage06`; `experimental/external-asp-v3-dev-stage06` | Detached C_in; `stage06` только при доказанном scoped изменении IPC/tests, с новой приёмкой пары |
-| 07 | `/home/gptlab/dev/techo5-v3-stage07` detached T06 | `/home/gptlab/dev/frankenasp-v3-stage07` detached C06 |
+| 01 | `${WORKSPACE}/techo5-v3-stage01` detached для baseline; будущая integration `${WORKSPACE}/techo5-v3-dev-main` | `${WORKSPACE}/frankenasp-v3-stage01` detached; репозиторий/основной checkout `${WORKSPACE}/frankenasp-v3` |
+| 02 | `${WORKSPACE}/techo5-v3-stage02`; `experimental/external-asp-v3-dev-stage02` | `${WORKSPACE}/frankenasp-v3-stage02`; `stage02` |
+| 03 | `${WORKSPACE}/techo5-v3-stage03`; `experimental/external-asp-v3-dev-stage03` | Нет пустой ветки; C_in только pin |
+| 04 | Нет пустой ветки; T_in только pin | `${WORKSPACE}/frankenasp-v3-stage04`; `stage04` |
+| 05 | `${WORKSPACE}/techo5-v3-stage05`; `experimental/external-asp-v3-dev-stage05` | Detached C_in для tests; `stage05` в отдельном C stage05 worktree только если меняется C code/tests |
+| 06 | `${WORKSPACE}/techo5-v3-stage06`; `experimental/external-asp-v3-dev-stage06` | Detached C_in; `stage06` только при доказанном scoped изменении IPC/tests, с новой приёмкой пары |
+| 07 | `${WORKSPACE}/techo5-v3-stage07` detached T06 | `${WORKSPACE}/frankenasp-v3-stage07` detached C06 |
 
 Если нужный путь/branch занят, STOP и сверить владельца; не overwrite/clean/reset. 01 и 07 не создают пустые stage01/stage07 refs. Это обоснованные административные этапы; code branches следуют общей нумерации, когда есть code changes.
 

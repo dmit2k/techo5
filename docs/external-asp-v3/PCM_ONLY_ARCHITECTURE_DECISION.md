@@ -34,6 +34,6 @@
 
 ## 4. Git и разрешения
 
-Документы: `dmit2k/techo5:experimental/v3-design-staging`. Стартовые обе dev-main: T03/C02 выше; protected main — Go `62603a7854283a3a07473a17c831c6ef0fd6f8d4`, C `e986ae18643e08e95f29a38aae1dd74762f6362e`. Перед каждым этапом повторно проверять refs/clean worktrees. Никаких reset/force/cherry-pick/squash, automatic merges, изменения main или Echo. В каждом correction отдельно фиксировать tested SHA, accepted pair и remote integration HEAD. Прямая авторизованная публикация stage refs — с `anfisa-trainer`.
+Документы: `dmit2k/techo5:experimental/v3-design-staging`. Стартовые обе dev-main: T03/C02 выше; protected main — Go `62603a7854283a3a07473a17c831c6ef0fd6f8d4`, C `e986ae18643e08e95f29a38aae1dd74762f6362e`. Перед каждым этапом повторно проверять refs/clean worktrees. Никаких reset/force/cherry-pick/squash, automatic merges, изменения main или Echo. В каждом correction отдельно фиксировать tested SHA, accepted pair и remote integration HEAD. Прямая авторизованная публикация stage refs — с `validation host`.
 
 **Задания для отдельных рабочих чатов**: `stages/02_PCM_ONLY_CORRECTION_PROMPT.md`, `stages/03_PCM_ONLY_CORRECTION_PROMPT.md`, `stages/04_PCM_ONLY_RESTART_PROMPT.md`. Исполнять **строго последовательно**, и каждый следующий prompt только после записи предыдущего accepted/integrated handoff. Публикация этих prompts не запускает worker сама по себе.

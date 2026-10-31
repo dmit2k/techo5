@@ -2,7 +2,7 @@
 
 ## 1. Идентичность / контроль статусов
 
-- **Stage:** 05, `stages/05_PAIRED_WIRE_GATE_TASK.md`; 2026-10-31, Europe/Riga; исполнитель: Stage05 code executor на `anfisa-trainer` через Desktop Commander.
+- **Stage:** 05, `stages/05_PAIRED_WIRE_GATE_TASK.md`; 2026-10-31, Europe/Riga; исполнитель: Stage05 code executor на `validation host` через authorized terminal tools.
 - **Docs authority:** `dmit2k/techo5:experimental/v3-design-staging` — **`391b146e35e59170a243a7d594c6a3e3bb281f92`**, локальный и независимый GitHub remote `ls-remote` совпали. Утверждённый SPEC: `SPEC_V2_APPROVED.md` Git blob **`f3e1b00d1f5d184e345c0d2c79da8394435ba3a4`**, независимо `git rev-parse <docs HEAD>:docs/external-asp-v3/SPEC_V2_APPROVED.md`.
 - **Принятый вход:** опубликованный `stages/04_HANDOFF.md` §9: independent delegated technical **ACCEPTED** и **integration COMPLETE** по Stage04 (это решение координатора, не дословная декларация владельца). Его точный output pair подтверждён отдельно на обоих remote перед началом.
 - **Execution: PASS — final 19/19 Go test/build matrix exit 0; C test, ASan, UBSan and both production ARM32 cross-builds exit 0**. Только software gate; acceptance и integration остаются PENDING.
@@ -19,7 +19,7 @@
 | **Accepted T_in / C_in** | `b0c0d5fa96576eff8f7497d48e39fa30a5348e76` | `f6266907edb90e7c9c2f414e8e46e6f215a21b7b` |
 | Docs predecessor | `stages/04_HANDOFF.md` @ docs `391b146e35e59170a243a7d594c6a3e3bb281f92` | same |
 | Stage ref | `experimental/external-asp-v3-dev-stage05` | none; **detached**, no artificial C commit |
-| Isolated worktree | `/home/gptlab/dev/techo5-v3-stage05` | `/home/gptlab/dev/frankenasp-v3-stage05` |
+| Isolated worktree | `${WORKSPACE}/techo5-v3-stage05` | `${WORKSPACE}/frankenasp-v3-stage05` |
 | Stage commits | `6c9af9ca308e5d3cba2baf86e77ebca20afbee00` → `da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9` | none |
 | **Tested candidate** | **`da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9`** (19/19 final Go matrix PASS; clean committed tree) | **`f6266907edb90e7c9c2f414e8e46e6f215a21b7b`** unchanged |
 | Accepted tested candidate (delegated technical decision) | **da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9** | **f6266907edb90e7c9c2f414e8e46e6f215a21b7b** unchanged |
@@ -32,7 +32,7 @@ Exact remote preflight `git ls-remote origin refs/heads/<integration> refs/heads
 
 **T_candidate = `da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9`; C_candidate = `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`**. Всё Go только от T_in; C принятого Stage04 без изменений. Historical `dmit2k/FrankenASP` не использован как runtime-сторона: offline compiled target — собственный C04 repo `src/{descriptor,io,runtime,factory_adapter,child}.c` + `tests/mock_vendor.c` **только тестовой линковкой `-DASP_TEST_ONLY`**.
 
-- **Сборка реального process-level mock:** `cd /home/gptlab/dev/frankenasp-v3-stage05 && make all build/io_faults.so`; `build/runtime_mock` SHA256 **`5c19a4ee07d25c6821aea43964a3f46ac966310e6ba5e461f97a3e344fdd244d`**. `build/codec_probe` independent C decoder. Go package `echod/internal/asp` содержит production `session_linux.go`, не Python/fake wire; Go `Start` использует `exec.Cmd` и настоящие OS pipes.
+- **Сборка реального process-level mock:** `cd ${WORKSPACE}/frankenasp-v3-stage05 && make all build/io_faults.so`; `build/runtime_mock` SHA256 **`5c19a4ee07d25c6821aea43964a3f46ac966310e6ba5e461f97a3e344fdd244d`**. `build/codec_probe` independent C decoder. Go package `echod/internal/asp` содержит production `session_linux.go`, не Python/fake wire; Go `Start` использует `exec.Cmd` и настоящие OS pipes.
 - **Shared independent fixture manifests:** Go `echod/internal/asp/testdata/SHA256SUMS` и C `testdata/SHA256SUMS`, byte-identical SHA256 **`9d26d6cca1e29b10f1abaee583da12ee918ea4252f16f70c3eb2c01531e1d2f4`**. Header ровно 16 bytes, records 28/8, supported descriptor 120 bytes, READY ровно единственный byte **`0xA5`** (fixture `testdata/readiness.bin`), no platform metadata; input MIC4 S32 24 valid bits + REF stereo S16 96k/1920 frames, два физических buffers 30720+7680 bytes. Валидация unsupported-geometry происходит до READY; output точно **640 bytes mono S16LE** на каждый exchange.
 - C emits 64 initial output zeros **однократно**; следующие samples из 8-ms ABI quanta 768→128. Direct Go/C compiled test checked complete first output/next output, retained first output unchanged. C writes diagnostic stdout chatter to *stderr*, preserves wire FD: no chatter in Go READY/PCM pipe. C source direct tests also validate REF L/R and mapping, bit alignments, supported/unsupported.
 - Real C short/EINTR fault injection via `build/io_faults.so` in test-only child environment, OS pipe reads/writes; test-only separately compiled tiny C helper covers READY invalid, EOF/short output, stuck write, stuck read, delayed partial response, Start failures and cancellation. Test-only environment injection occurs only through unexported Go `startPinned`, no user-facing launch override or public production test API.
@@ -55,17 +55,17 @@ Stock MIC, native tap, SoftwareCut, codec and other packages not modified at Sta
 
 ## 5. Test commands, evidence and results
 
-**Evidence directory (all outside any code/docs worktree):** `/home/gptlab/dev/techo5-v3-stage05-evidence-20261031/`; final exact Go matrix in `final/`. Reproducer script `run-go-matrix-final.sh`; main cwd `/home/gptlab/dev/techo5-v3-stage05/echod`, C cwd `/home/gptlab/dev/frankenasp-v3-stage05`. Toolchains: Go **go1.26.9 linux/amd64**, local `cc` **GCC13.3.0**, ARM32 GCC 13.3.0 SHA256 `73c40a8b836981da0da98dfae66073ed4b9d485cf786899d0c5ef3eeb311e548`, ld 2.42 SHA256 `d15886a5fd7498e8f96a1977ce1b2bbcb2ab617174245d42d026cc2501354bb6`.
+**Evidence directory (all outside any code/docs worktree):** `${WORKSPACE}/techo5-v3-stage05-evidence-20261031/`; final exact Go matrix in `final/`. Reproducer script `run-go-matrix-final.sh`; main cwd `${WORKSPACE}/techo5-v3-stage05/echod`, C cwd `${WORKSPACE}/frankenasp-v3-stage05`. Toolchains: Go **go1.26.9 linux/amd64**, local `cc` **GCC13.3.0**, ARM32 GCC 13.3.0 SHA256 `73c40a8b836981da0da98dfae66073ed4b9d485cf786899d0c5ef3eeb311e548`, ld 2.42 SHA256 `d15886a5fd7498e8f96a1977ce1b2bbcb2ab617174245d42d026cc2501354bb6`.
 
 Go environment:
 ```sh
-export PATH=/home/gptlab/dev/techo5-asp-p3-4a-arm32-build-20261027/toolchains/go1.26.9/bin:$PATH
+export PATH=${WORKSPACE}/techo5-asp-p3-4a-arm32-build-20261027/toolchains/go1.26.9/bin:$PATH
 export GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off GOFLAGS=-p=1 GOMAXPROCS=2
-export ASP_STAGE05_C_MOCK=/home/gptlab/dev/frankenasp-v3-stage05/build/runtime_mock
-export ASP_STAGE05_C_FAULTS=/home/gptlab/dev/frankenasp-v3-stage05/build/io_faults.so
-export ASP_C_DECODER=/home/gptlab/dev/frankenasp-v3-stage05/build/codec_probe
-cd /home/gptlab/dev/techo5-v3-stage05/echod
-bash /home/gptlab/dev/techo5-v3-stage05-evidence-20261031/run-go-matrix-final.sh
+export ASP_STAGE05_C_MOCK=${WORKSPACE}/frankenasp-v3-stage05/build/runtime_mock
+export ASP_STAGE05_C_FAULTS=${WORKSPACE}/frankenasp-v3-stage05/build/io_faults.so
+export ASP_C_DECODER=${WORKSPACE}/frankenasp-v3-stage05/build/codec_probe
+cd ${WORKSPACE}/techo5-v3-stage05/echod
+bash ${WORKSPACE}/techo5-v3-stage05-evidence-20261031/run-go-matrix-final.sh
 ```
 
 | W ID | Test commands / measured evidence | Verdict |
@@ -90,19 +90,19 @@ bash /home/gptlab/dev/techo5-v3-stage05-evidence-20261031/run-go-matrix-final.sh
 - `go test -c -o final/go-builds/asp-wire-test-amd64 ./internal/asp`
 - `env CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o final/go-builds/echod-linux-arm32 ./cmd/echod`.
 
-**C exact unchanged C_SHA**: `cd /home/gptlab/dev/frankenasp-v3-stage05 && make test && make asan && make ubsan`, all **exit0**; logs `make-test.log`, `make-asan.log`, `make-ubsan.log`. Crossbuilds with owner-private toolchain from accepted Stage04 (exact commands/scripts, no device action):
+**C exact unchanged C_SHA**: `cd ${WORKSPACE}/frankenasp-v3-stage05 && make test && make asan && make ubsan`, all **exit0**; logs `make-test.log`, `make-asan.log`, `make-ubsan.log`. Crossbuilds with owner-private toolchain from accepted Stage04 (exact commands/scripts, no device action):
 ```sh
-TC=/home/gptlab/dev/techo5-stock-audio-audit-20261021/arm32-tools
+TC=${WORKSPACE}/techo5-stock-audio-audit-20261021/arm32-tools
 BIONIC_CC=$TC/cross/usr/bin/arm-linux-gnueabihf-gcc-13
 BIONIC_LD=$TC/binutils-unpacked/usr/bin/arm-linux-gnueabihf-ld
-BIONIC_ROOT=/home/gptlab/dev/techo5-stock-audio-audit-20261021/factory-arm32-root
+BIONIC_ROOT=${WORKSPACE}/techo5-stock-audio-audit-20261021/factory-arm32-root
 LD_LIBRARY_PATH=$TC/binutils-unpacked/usr/lib/x86_64-linux-gnu
-OUT_DIR=/home/gptlab/dev/techo5-v3-stage05-evidence-20261031/c-bionic
+OUT_DIR=${WORKSPACE}/techo5-v3-stage05-evidence-20261031/c-bionic
 bash build_bionic.sh
 ARM32_CC=$BIONIC_CC
 ARM32_BINUTILS=$TC/binutils-unpacked/usr/arm-linux-gnueabihf/bin
-ARM32_SYSROOT=/home/gptlab/dev/techo5-asp2-f2b-minimal-20261028/private/toolchain/sysroot
-OUT_DIR=/home/gptlab/dev/techo5-v3-stage05-evidence-20261031/c-launcher
+ARM32_SYSROOT=${WORKSPACE}/techo5-asp2-f2b-minimal-20261028/private/toolchain/sysroot
+OUT_DIR=${WORKSPACE}/techo5-v3-stage05-evidence-20261031/c-launcher
 bash build_launcher.sh
 ```
 Both exit0, outputs **byte-identical to accepted Stage04**, ARM EABI5: Bionic `asp1-child` SHA256 **`86d4f4d7827129e944c76187dc4575ef7bc5240f2b99f048e7860ed71057fa05`**, Linux static `asp1-launcher-arm32` SHA256 **`fce1f3e1abc427d7e5402da5c56dd530d5bf2acd7686b4f3aba98d1445b24ab7`**. Final Go native test executable SHA256 **892309a3aaf81e6b077964ee4605b84bddd7147b3f23c28c9907bd8652a999c1**; Linux ARM32 TECHO5 SHA256 **8c3bfc92631976633d09f57069ff07ef960bfe824bbcbb92be66d562bde496b2**; default amd64 SHA256 **74df67ce95309f0d9e1b8ac00d89d6bca08e4e38a2496e255cf625acbb13b549**. All seven final Go build artifacts verified via sha256sum -c final/go-builds/SHA256SUMS; manifest SHA256 **ad7838706398a8f21ee9aa78fd3e4cd68dce92cdf288cfd21c5fbba926a31d06**.
@@ -132,22 +132,22 @@ Stage06 gets `echod/internal/asp/session_linux.go`, `Descriptor` PCM-only codec,
 
 ## 8. Publication boundary
 
-Executor evidence and this handoff reside **outside** code/docs checkouts at `/home/gptlab/dev/techo5-v3-stage05-evidence-20261031/05_HANDOFF.md`. Docs coordinator alone publishes `docs/external-asp-v3/stages/05_HANDOFF.md` on documentation branch after independent review/decision/integration receipt; no documentation commits, merges, FFs or pushes by Stage05 executor.
+Executor evidence and this handoff reside **outside** code/docs checkouts at `${WORKSPACE}/techo5-v3-stage05-evidence-20261031/05_HANDOFF.md`. Docs coordinator alone publishes `docs/external-asp-v3/stages/05_HANDOFF.md` on documentation branch after independent review/decision/integration receipt; no documentation commits, merges, FFs or pushes by Stage05 executor.
 
 **Final coordinator status:** execution PASS; delegated technical acceptance **ACCEPTED**; integration **COMPLETE**. Docs и Go dev-main опубликовал координатор после тестов; исполнитель их не менял (§9).
 
 ## 9. Independent coordinator technical acceptance and integration receipt (2026-10-31)
 
-**Original executor handoff preserved:** `/home/gptlab/dev/techo5-v3-stage05-evidence-20261031/05_HANDOFF.md`, SHA256 `24deaaeba7d2907c6835f0b2336d3504061d8c775ed8546d6c94c58e1886001f`. Original PENDING statuses in the historical executor snapshot were correct at the time. This published coordinator edition includes subsequent independently verified ACCEPTED/COMPLETE receipts.
+**Original executor handoff preserved:** `${WORKSPACE}/techo5-v3-stage05-evidence-20261031/05_HANDOFF.md`, SHA256 `24deaaeba7d2907c6835f0b2336d3504061d8c775ed8546d6c94c58e1886001f`. Original PENDING statuses in the historical executor snapshot were correct at the time. This published coordinator edition includes subsequent independently verified ACCEPTED/COMPLETE receipts.
 
 **Decision: Stage05 software gate ACCEPTED** (independent delegated technical acceptance, not a verbatim owner declaration). Reviewed against `PCM_ONLY_ARCHITECTURE_DECISION.md`, `MASTER_CONTRACT.md`, `SPEC_V2_APPROVED.md`, `stages/05_PAIRED_WIRE_GATE_TASK.md` and accepted Stage04. Go candidate `da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9` is precisely two commits after Stage04 Go input; GitHub independent compare confirms exactly two new files, `session_linux.go` (381 production lines) and `session_linux_test.go` (785 test lines). C `f6266907edb90e7c9c2f414e8e46e6f215a21b7b` remains unchanged. The reviewed Go code uses pinned FD3 executable/FD4 deployment, strict path ownership, one 10-second startup budget through READY, one global 5-second budget across synchronous PCM writes and 640-byte read, per-session Cancel/Close with one Wait/reaper, borrowed PCM and independently owned output. No HA/Source/Selected/Active activation claimed: it belongs to Stage06.
 
 **Independent tests on exactly this pair:**
 - `go test -count=1 -parallel 1 -v ./internal/asp` with compiled C04 runtime mock and C fault injector plus standalone compiled codec probe: **PASS**. Real Go/C OS pipes and wire test W01–W08 confirm one byte READY `0xA5`, exact buffers/640 output, C short I/O/EINTR, unsupported before READY, cancellation, 5-second blocked read/write and shared partial-response budget, startup 10-second timeout, survival after >10 seconds from READY, secure pinned path/rename race and installation replacement, FD leaks, one reaper, output ownership.
 - `go test -race -count=1 -parallel 1 ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy`: **PASS**; `go vet ./internal/asp ./internal/hardware/mic ./internal/layout ./internal/hardware/privacy ./internal/lib/alsa`: **PASS**.
-- Independent full `go test -count=1 -parallel 1 ./...`: **PASS**. Coordinator log at `/home/gptlab/dev/techo5-v3-stage05-evidence-20261031/coordinator-full-go.log`.
+- Independent full `go test -count=1 -parallel 1 ./...`: **PASS**. Coordinator log at `${WORKSPACE}/techo5-v3-stage05-evidence-20261031/coordinator-full-go.log`.
 - C04 unchanged `make test`, `make asan`, `make ubsan`, codec fixture manifest: **PASS**. Executor's verified final Go 19/19 commands include default, dot, dot+donut, spot, panel and Linux ARM32 builds; coordinator verified their original logs and full 41-entry evidence manifest, but does not claim to independently rerun all tagged/crossbuild variants. Production ARM32 Go, Bionic C child and static launcher are evidenced by hashes/crossbuild logs, not target runtime execution.
 
-**Actual Go-only integration:** on clean worktrees with remote refs verified Go dev-main `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, Go Stage05 `da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9`, C dev-main `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`, docs predecessor `391b146e35e59170a243a7d594c6a3e3bb281f92`, coordinator executed `git merge --ff-only da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9` in `/home/gptlab/dev/techo5-v3-dev-main` and a direct authorized `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main` from `anfisa-trainer`. Remote Go stage ref and Go dev-main now both equal the exact accepted candidate; C dev-main unchanged. Protected mains unchanged: Go `62603a7854283a3a07473a17c831c6ef0fd6f8d4`, C `e986ae18643e08e95f29a38aae1dd74762f6362e`. No force/rebase/reset/squash, no device action.
+**Actual Go-only integration:** on clean worktrees with remote refs verified Go dev-main `b0c0d5fa96576eff8f7497d48e39fa30a5348e76`, Go Stage05 `da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9`, C dev-main `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`, docs predecessor `391b146e35e59170a243a7d594c6a3e3bb281f92`, coordinator executed `git merge --ff-only da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9` in `${WORKSPACE}/techo5-v3-dev-main` and a direct authorized `git push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main` from `validation host`. Remote Go stage ref and Go dev-main now both equal the exact accepted candidate; C dev-main unchanged. Protected mains unchanged: Go `62603a7854283a3a07473a17c831c6ef0fd6f8d4`, C `e986ae18643e08e95f29a38aae1dd74762f6362e`. No force/rebase/reset/squash, no device action.
 
 **Accepted Stage06 input:** TECHO5 Go **`da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9`** + FrankenASP V3 C **`f6266907edb90e7c9c2f414e8e46e6f215a21b7b`**. Execution **PASS**, delegated technical acceptance **ACCEPTED**, integration **COMPLETE**. Stage06 production Source/lifecycle work is now unblocked by its separate assignment. No live FrankenASP factory launcher/Calibrator/Echo/acoustic qualification has occurred.
