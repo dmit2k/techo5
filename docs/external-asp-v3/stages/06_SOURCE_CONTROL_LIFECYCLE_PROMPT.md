@@ -6,12 +6,12 @@
 
 Сначала полностью прочитай в /home/gptlab/dev/techo5-v3-design-staging/docs/external-asp-v3/:
 1. EXECUTION_BRANCH_STRATEGY.md.
-2. MASTER_CONTRACT.md.
+2. MASTER_CONTRACT.md и PCM_ONLY_ARCHITECTURE_DECISION.md.
 3. stages/06_SOURCE_CONTROL_LIFECYCLE_TASK.md.
 4. SPEC_V2_APPROVED.md, §§3–4, 6.6, 8–16, 18.1/18.4/18.5, 20.4–20.10, 24; нужные уточнения/решения перечислены в TASK.
 5. HANDOFF_TEMPLATE.md и **принятый stages/05_HANDOFF.md**.
 
-Проверь опубликованный docs HEAD, V2 blob actual SPEC blob from new clean-base docs commit, verified and pinned before Stage, remotes, clean worktrees и applicable AGENTS.md. Входы — exact output integration SHA из handoff 05, только если execution PASS, owner acceptance ACCEPTED и integration COMPLETE. Сверь их с remote TECHO5 experimental/external-asp-v3-dev-main и dmit2k/frankenasp-v3:experimental/v3-dev-main. Отсутствие принятого handoff или несовпадение refs означает STOP; не используй latest/незавершённую stage-ветку.
+Проверь опубликованный docs HEAD, V2 blob actual SPEC blob from new clean-base docs commit, verified and pinned before Stage, remotes, clean worktrees и applicable AGENTS.md. Входы — exact output integration SHA из handoff 05: execution PASS, **independent delegated technical acceptance ACCEPTED** и integration COMPLETE (это техническое решение координатора, а не вымышленная дословная декларация владельца). Принятая Stage05 pair: Go `da8d1b0cf5fa768dd44f2c3f9755d4876ac5dab9`, C `f6266907edb90e7c9c2f414e8e46e6f215a21b7b`; непосредственно перед Stage06 всё равно заново проверять remote SHA. Сверь их с remote TECHO5 experimental/external-asp-v3-dev-main и dmit2k/frankenasp-v3:experimental/v3-dev-main. Отсутствие принятого handoff или несовпадение refs означает STOP; не используй latest/незавершённую stage-ветку.
 
 Создай Go stage06/worktree. C pin из accepted pair05, без пустой ветки; scoped C corrections только с повторной парной проверкой. Подключи Source/HA/persistence и сразу весь lifecycle/cancellation/output ownership. Принимай совместную пару, даже если C unchanged.
 
