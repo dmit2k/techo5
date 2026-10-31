@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/HuskerMinion/techo5/echod/internal/asp"
-	"github.com/HuskerMinion/techo5/echod/internal/layout"
 	"github.com/HuskerMinion/techo5/echod/internal/lib/alsa"
 )
 
@@ -135,23 +134,22 @@ func TestN05OwnedStockRetentionHistoryAndRaw(t *testing.T) {
 	}
 }
 
-func TestN07NativeDescriptorRawByteExact(t *testing.T) {
+func TestN07NativePCMOnlyDescriptor(t *testing.T) {
 	mic := []byte{1, 2, 3, 4, 5, 6}
-	b := nativeInterleaved(mic, 16000, asp.FormatS24_3, 24, 0, 1, 0)
-	raw := []byte{0, 0x80, 0xff, ' ', 0}
-	desc := b.DescriptorWithRaw(nil, nil, []layout.RawSource{
-		{Source: "/proc/idme/miccal.0", Bytes: raw},
-		{Source: "/proc/idme/unknown", Bytes: []byte{}},
-	})
-	enc, err := asp.Encode(desc)
+	block := nativeInterleaved(mic, 16000, asp.FormatS24_3, 24, 0, 1, 0)
+	desc := block.Descriptor()
+	wire, err := asp.Encode(desc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Contains(enc, raw) || len(desc.Factory) != 2 || desc.Factory[1].Bytes == nil {
-		t.Fatal("raw bytes changed")
+	if len(wire) != 16+28+8 {
+		t.Fatalf("unexpected descriptor size %d", len(wire))
 	}
-	if &b.Buffers[0][0] != &mic[0] || &desc.Factory[0].Bytes[0] != &raw[0] {
-		t.Fatal("unnecessary native or metadata copy")
+	if &block.Buffers[0][0] != &mic[0] {
+		t.Fatal("native PCM copied")
+	}
+	if !bytes.Equal(block.Buffers[0], mic) {
+		t.Fatal("input mutated")
 	}
 }
 

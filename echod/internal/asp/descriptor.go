@@ -10,12 +10,10 @@ import (
 const (
 	Magic                   = "ASP1"
 	Version                 = 1
-	HeaderSize              = 24
+	HeaderSize              = 16
 	BufferSize              = 28
 	ChannelSize             = 8
-	MaxDescriptorSize       = 65536
-	MaxRawValueSize         = 32768
-	MaxRawEntries           = 64
+	MaxDescriptorSize       = HeaderSize + 255*BufferSize + 255*ChannelSize
 	ReadyByte         byte  = 0xa5
 	OutputBytes             = 640
 	FormatS16         uint8 = 1
@@ -36,65 +34,21 @@ type Channel struct {
 	FrameOffset       uint32
 }
 
-// RawField keeps original bytes with the original source name. Empty values
-// and absent fields are distinct. No factory interpretation occurs in Go.
-type RawField struct {
-	Source string
-	Bytes  []byte
-}
+// Descriptor contains only physical PCM buffer and captured channel geometry.
 type Descriptor struct {
-	Buffers                     []Buffer
-	Channels                    []Channel
-	Platform, Hardware, Factory []RawField
+	Buffers  []Buffer
+	Channels []Channel
 }
 
-func rawSection(fields []RawField) ([]byte, error) {
-	var out []byte
-	seen := make(map[string]bool, len(fields))
-	for _, f := range fields {
-		n := len(f.Source)
-		if n == 0 || n > 63 || seen[f.Source] || len(f.Bytes) > MaxRawValueSize {
-			return nil, errors.New("invalid raw field name, duplicate or size")
-		}
-		for i := 0; i < n; i++ {
-			c := f.Source[i]
-			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '/' || c == '_' || c == '-' || c == '.') {
-				return nil, errors.New("invalid raw source byte")
-			}
-		}
-		seen[f.Source] = true
-		out = append(out, byte(n), byte(len(f.Bytes)), byte(len(f.Bytes)>>8))
-		out = append(out, f.Source...)
-		out = append(out, f.Bytes...)
-	}
-	return out, nil
-}
-
-// Encode writes fixed header, physical buffer records, captured channel records
-// and three length-delimited raw source sections, with no Go-side DSP semantics.
+// Encode writes the PCM-only v1 wire bytes with exact 16+28*N+8*M length.
 func Encode(d Descriptor) ([]byte, error) {
 	nb, nc := len(d.Buffers), len(d.Channels)
-	if nb < 1 || nb > 255 || nc < 1 || nc > 255 || len(d.Platform)+len(d.Hardware)+len(d.Factory) > MaxRawEntries {
-		return nil, errors.New("invalid counts")
+	if nb < 1 || nb > 255 || nc < 1 || nc > 255 {
+		return nil, errors.New("invalid PCM buffer/channel counts")
 	}
-	platform, e := rawSection(d.Platform)
-	if e != nil {
-		return nil, e
-	}
-	hardware, e := rawSection(d.Hardware)
-	if e != nil {
-		return nil, e
-	}
-	factory, e := rawSection(d.Factory)
-	if e != nil {
-		return nil, e
-	}
-	if len(platform) > 65535 || len(hardware) > 65535 {
-		return nil, errors.New("raw section overflows uint16")
-	}
-	sz := HeaderSize + nb*BufferSize + nc*ChannelSize + len(platform) + len(hardware) + len(factory)
+	sz := HeaderSize + nb*BufferSize + nc*ChannelSize
 	if sz > MaxDescriptorSize {
-		return nil, errors.New("descriptor exceeds 65536 bytes")
+		return nil, errors.New("descriptor exceeds PCM-only maximum")
 	}
 	var seenMic, seenRef [255]bool
 	micCount, refCount := 0, 0
@@ -174,9 +128,6 @@ func Encode(d Descriptor) ([]byte, error) {
 	out[6], out[7] = byte(nb), byte(nc)
 	binary.LittleEndian.PutUint32(out[8:], uint32(sz))
 	binary.LittleEndian.PutUint32(out[12:], uint32(cumulative))
-	binary.LittleEndian.PutUint16(out[16:], uint16(len(platform)))
-	binary.LittleEndian.PutUint16(out[18:], uint16(len(hardware)))
-	binary.LittleEndian.PutUint32(out[20:], uint32(len(factory)))
 	p := HeaderSize
 	for _, b := range d.Buffers {
 		binary.LittleEndian.PutUint32(out[p:], b.Offset)
@@ -194,8 +145,5 @@ func Encode(d Descriptor) ([]byte, error) {
 		binary.LittleEndian.PutUint32(out[p+4:], c.FrameOffset)
 		p += ChannelSize
 	}
-	p += copy(out[p:], platform)
-	p += copy(out[p:], hardware)
-	copy(out[p:], factory)
 	return out, nil
 }
