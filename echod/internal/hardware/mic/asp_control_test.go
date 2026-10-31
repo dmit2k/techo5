@@ -303,15 +303,31 @@ func TestL07NativeSoftwareCutAndStockRaw(t *testing.T) {
 	for i := range raw {
 		raw[i] = 0x6b
 	}
-	fake := &fakePlainCapture{cfg: alsaConfig(), bytes: raw}
+	// The stock buffer includes the physical MIC and REF slots, not just Mics.
+	cfg := alsaConfig()
+	cfg.Channels = Channels
+	fake := &fakePlainCapture{cfg: cfg, bytes: raw}
 	dst := make([]byte, len(raw))
 	visited := false
 	_, cut, err := readCaptured(fake, dst, func() bool { return true }, func(b NativeBlock) {
 		visited = true
+		if len(b.Geometry.Channels) != Channels || len(b.Buffers) != 1 {
+			t.Fatalf("native geometry lost physical MIC/REF: %+v", b.Geometry)
+		}
+		for i, ch := range b.Geometry.Channels {
+			wantRole, wantSlot := asp.RoleMIC, i
+			if i >= Mics {
+				wantRole, wantSlot = asp.RoleREF, i-Mics
+			}
+			if ch.Role != wantRole || ch.RoleIndex != uint16(wantSlot) || ch.FrameOffset != uint32(i*3) {
+				t.Fatalf("physical MIC/REF %d has wrong role/slot/offset: %+v", i, ch)
+			}
+		}
+		// All physical channels are zeroed, including distinct REF L/R on two-REF devices.
 		for _, native := range b.Buffers {
 			for _, v := range native {
 				if v != 0 {
-					t.Fatal("native MIC not muted")
+					t.Fatal("native MIC/REF not muted")
 				}
 			}
 		}
