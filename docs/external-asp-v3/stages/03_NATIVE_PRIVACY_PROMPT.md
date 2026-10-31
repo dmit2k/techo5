@@ -1,5 +1,8 @@
 # Стартовый промпт 03 — native PCM, metadata и SoftwareCut
 
+> **SUPERSEDED for all future execution as of 2026-10-31.** Этот исторический стартовый prompt относится к прежнему raw-metadata контракту и НЕ является разрешением на исполнение. Используй [новый correction prompt](03_PCM_ONLY_CORRECTION_PROMPT.md) и `../PCM_ONLY_ARCHITECTURE_DECISION.md`; для Stage04 дождись двух correction handoffs.
+
+
 > Текст ниже готов к отправке целиком в новый Work-чат. Он разрешает этап только когда владелец отдельно отправит его как поручение; публикация пакета сейчас не является поручением.
 
 Выполни **только этап 03 TECHO5 / FrankenASP V3 — native PCM, metadata и SoftwareCut**. Используй Work и Desktop Commander на anfisa-trainer.

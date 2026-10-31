@@ -1,6 +1,6 @@
 # Матрица требований → исполнитель → проверка
 
-Этот документ не меняет утверждённые требования. D01–D58 — номера [реестра](REGISTER_58_DECISIONS.md), F1–F5 — [уточнения](FINAL_FIVE_CLARIFICATIONS.md), V01–V27 — разделы [V2](SPEC_V2_APPROVED.md), A1–A9 — закрытые [замечания аудитора](AUDIT_V1_REQUIRED_CORRECTIONS.md). Статус архитектуры APPROVED, **реализация/tests ещё не выполнялись**.
+Текущая трассировка включает **принятую владельцем PCM-only поправку от 2026-10-31** ([решение](PCM_ONLY_ARCHITECTURE_DECISION.md)). D01–D58 — номера [реестра](REGISTER_58_DECISIONS.md), F1–F5 — [уточнения](FINAL_FIVE_CLARIFICATIONS.md), V01–V27 — разделы [действующего ТЗ](SPEC_V2_APPROVED.md), A1–A9 — идентификаторы закрытых замечаний **исторического аудита V1** (его отдельный файл отсутствует в текущем clean-base docs tree). Предыдущие Stage02/03 tests/acceptance прошли по старому wire; **PCM-only correction tests/acceptance ещё PENDING**.
 
 В столбце «Владелец» один этап отвечает за закрытие строки; вспомогательные implementation/verification stages указаны в критерии. Test IDs B/C/N/H/W/L/S определены в TASK 01/02/03/04/05/06/07. Итоговый 07 проверяет всю матрицу, не переносит на себя выполнение пропущенных этапных tests. Точные команды появятся в принятых handoffs после создания кода.
 
@@ -11,8 +11,8 @@
 | D01 | Необязательный External, полный Built-in | 06 | L01/L10, S07: без helper штатный поток и consumers работают |
 | D02 | Единственная интеграция mic.Source | 06 | L07/L10, S09: один capture owner и mono publication |
 | D03 | Исходный PCM до stock conversion | 03 | N01/N02: native bytes наблюдаются до convert |
-| D04 | Фактический descriptor/capture metadata | 02 | C01–C05; 03 N07 связывает значения с actual capture |
-| D05 | DSP adaptation у helper, hardware/metadata у host | 04 | H01/H02, 03 N07; review F1 без host resampling |
+| D04 | Фактический PCM-only capture descriptor | 02-R | C01–C05, 03-R N07: реальные PCM buffers/roles, no metadata |
+| D05 | DSP adaptation у helper, vendor resources у FrankenASP launcher, PCM у host | 04 | H01/H02/H08 и 03-R N07: no host metadata/qualification |
 | D06 | Нет generic platform admission | 03 | N02 и S09: корректные non-Athena/no-REF layouts не отвергаются host |
 | D07 | Прямое использование подходящего capture PCM | 03 | N02/N04: plain buffer без DSP wrapper |
 | D08 | Минимальный optional native tap | 03 | N01: paired callback до convert, прежний Read сохранён |
@@ -71,7 +71,7 @@
 
 | ID | Обязательство | Владелец | Критерий |
 |---|---|---|---|
-| F1 | Host hardware/capture/metadata/Built-in; helper DSP-specific adaptation | 03 | N01/N07; 04 H01/H02: hardware/IDME не перенесены в helper, DSP mapping/resampling не перенесены в host |
+| F1 | Host capture/PCM/Built-in; FrankenASP launcher vendor resource aliases; Calibrator DSP calibration | 02-R/03-R/04 | C03/N07/H02/H08: no metadata wire, no host External factory reader, launcher owns factory view |
 | F2 | Фактический input representation и единый mono S16LE/16k/320 output | 02 | C01–C05; 03 N01/N02 actual buffers, 05 W02 fixed output |
 | F3 | Cancellation/identity устаревшего launch/PCM, без generation/queues | 06 | L03/L04 все 8 races, W06 old cleanup не трогает new session |
 | F4 | Borrowed input отдельно от stable output | 06 | N04 input; L07 retention во время reads/exchanges/fallback/toggles |
@@ -84,7 +84,7 @@
 | V01 | Цель/минимальность | 07 | S09/S10 и upstream diff |
 | V02 | Scope и исключения | 01 | B02/B05; H08/S09 no installer/OTA/assets/extra platform |
 | V03 | mic.Source/stock/output | 06 | L07/L10/S07 |
-| V04 | Native/ответственность/metadata | 03 | N01–N08; H01/H02 helper-only qualification |
+| V04 | Native PCM-only boundary и resource ownership | 03-R/04 | N01–N08; H01/H02/H08 helper-owned resources |
 | V05 | Descriptor/transport | 02 | C01–C07; 05 W01/W08 подтверждает runtime и FD roles |
 | V06 | PCM/deadlines | 05 | W02–W05: 640 bytes, 5s total, startup10s отдельно |
 | V07 | FrankenASP runtime/FIFO | 04 | H01–H08; W02 compiled pair |
@@ -114,9 +114,9 @@
 | ID | Исправление | Владелец | Проверка |
 |---|---|---|---|
 | A1 | FD3/FD4 не PCM | 05 | W08 + H04: pinned exec/assets, 0/1 pipes, C wire isolation |
-| A2 | Полный бинарный descriptor | 02 | C01/C02/C04: 24/28/8, codes/valid bits/shift, channel coverage, contiguous offsets, last sample/overflow |
-| A3 | Точные metadata/calibration values | 02 | C03 + N07/H02: raw source bytes byte-exact; no Go Q30/masks/confidence/availability/MIC slot mapping; C helper qualification |
-| A4 | Buffer count не 1–2, raw-source justified bounded descriptor отдельно от PCM | 02 | C02/C04/C05: >2 buffers, stereo REF L/R byte-exact, raw metadata bounds, overflow reject |
+| A2 | Полный PCM-only binary descriptor | 02-R | C01/C02/C04: **16/28/8**, no metadata, valid bits/shift, channel coverage/offsets/last sample |
+| A3 | Calibration вне PCM IPC | 02-R/03-R/04 | C03/N07/H02/H08: no IDME bytes/fields; launcher provides permitted vendor resources and vendor Calibrator owns gain |
+| A4 | Buffer count не 1–2, bounded PCM-only descriptor отдельно от PCM input | 02-R | C02/C04/C05: >2 buffers, stereo REF L/R, max header+records 9196, overflow reject |
 | A5 | Parsing не обещает DSP compatibility | 04 | H01/H02 и W02: supported positive, valid unsupported reject до READY; no new resampler |
 | A6 | Startup budget не убивает READY child | 05 | W05 actual >10s survival, L01 Built-in во время запуска |
 | A7 | Cancel/pipes до Run wait; единственный cmd.Wait | 06 | L06 signal/update/error path, W06 process lifecycle |

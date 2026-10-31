@@ -1,5 +1,8 @@
 # Стартовый промпт 04 — минимальный новый C helper
 
+> **SUPERSEDED for all future execution as of 2026-10-31.** Этот исторический стартовый prompt относится к прежнему raw-metadata контракту и НЕ является разрешением на исполнение. Используй [новый correction prompt](04_PCM_ONLY_RESTART_PROMPT.md) и `../PCM_ONLY_ARCHITECTURE_DECISION.md`; для Stage04 дождись двух correction handoffs.
+
+
 > Текст ниже готов к отправке целиком в новый Work-чат. Он разрешает этап только когда владелец отдельно отправит его как поручение; публикация пакета сейчас не является поручением.
 
 Выполни **только этап 04 TECHO5 / FrankenASP V3 — минимальный новый C helper**. Используй Work и Desktop Commander на anfisa-trainer.

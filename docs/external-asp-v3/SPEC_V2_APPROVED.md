@@ -1,6 +1,6 @@
 # TECHO5 / FrankenASP — техническое задание на финальный рефакторинг External ASP
 
-**Статус:** V3 RESTART OWNER ACCEPTED 2026-10-31 — raw MIC/REF/IDME поправка принята владельцем; исторический AUDIT_V2_FINAL не является независимым аудитом этой новой редакции  
+**Статус:** V3 RESTART — PCM-ONLY ARCHITECTURE CORRECTION, OWNER DIRECTED 2026-10-31. Эта редакция заменяет прежний raw-IDME wire contract; исторические Stage02/03 ACCEPTED относятся к предыдущему контракту, а новое соответствие требует последовательных correction gates. Исторический AUDIT_V2_FINAL не проверял эту редакцию.
 **Дата:** 30 октября 2026 года  
 **Основание:** 58 архитектурных решений, пять финальных уточнений и девять замечаний аудитора к V1  
 **Область:** экспериментальная ветка TECHO5 с External ASP и сопряжённый FrankenASP  
@@ -53,7 +53,7 @@
 - Преобразует частоту и PCM formats.
 - Согласует размеры квантов.
 - Управляет собственными FIFO.
-- Использует доступные metadata и calibration.
+- Самостоятельно получает доступ к нужным ему vendor resources/calibration в своей среде запуска, а не через PCM descriptor.
 - Выполняет DSP.
 - Возвращает строго определённый mono PCM.
 
@@ -220,21 +220,17 @@ Host предоставляет фактическое представлени�
 
 Не добавлять дополнительные копии или собственные buffer pools без необходимости.
 
-## 4.4. Metadata
+## 4.4. PCM-only boundary и ресурсы DSP
 
-TECHO5 сохраняет ответственность за:
+TECHO5 сохраняет ответственность за **штатную платформенную настройку capture**, реальные MIC/REF PCM buffers, фактическую **PCM geometry**, SoftwareCut, stock conversion/Built-in. Платформенно-зависимый capture backend допустим: универсальна **граница** между capture и External, а не внутреннее устройство каждого backend.
 
-- Hardware capture configuration.
-- Получение фактических capture properties.
-- Чтение исходных, ненормализованных заводских IDME/metadata bytes без их семантического преобразования для External.
-- Передачу реально доступных hardware/IDME metadata byte-for-byte; без Go parseIdme/layout.Idme-derived values, Q30, masks, confidence, availability, MIC-slot gain association или host platform qualification.
-- Stock conversion и Built-in processing.
+**External descriptor содержит только PCM geometry (buffer/channel records).** Никакие platform identity, hardware/factory/IDME metadata, calibration bytes, gain coefficients, Q30, source paths, device identifiers или capabilities не передаются по PCM IPC. Host не добавляет readers IDME, eMMC, Device Tree или vendor assets **ради External**; существующие stock функции и их вызовы не изменять.
 
-Helper отвечает за интерпретацию этих данных применительно к своему DSP.
+FrankenASP launcher самостоятельно подготавливает **минимальные разрешённые vendor resources** перед запуском конкретного child: verified vendor assets, нужные read-only filesystem views/FD и при необходимости aliases factory IDME paths, как в предыдущем проверенном launcher. Нужные конкретному factory backend `/proc/idme/miccal.N` aliases — его частная реализация, **не требование к другим External helpers**. Launcher сохраняет secure FD/mount/exec границы, не интерпретирует calibration и не изменяет PCM. Factory DSP/Calibrator сам использует предоставленные ресурсы и единолично владеет применением calibration. Ни TECHO5, ни launcher не дублируют gain application.
 
-Недоступные metadata обозначаются отсутствующими.
+При отсутствии каких-либо IDME/calibration файлов PCM capture и корректность descriptor остаются независимыми; конкретный helper может отказаться от READY **только если** его реальный backend требует отсутствующий ресурс для успешной инициализации. TECHO5 остаётся в Built-in. Никаких host-side platform admission или фиктивных коэффициентов.
 
-Не подменять отсутствующие metadata вымышленными platform defaults.
+Этот контракт — замена прежнему raw-IDME transport, не дополнение и не dual-mode negotiation; см. `PCM_ONLY_ARCHITECTURE_DECISION.md`.
 
 ## 4.5. Platform admission
 
@@ -283,18 +279,11 @@ PCM IPC — прежние stdin/stdout pipes дочернего процесс�
 
 Все multi-byte integer fields передаются явно в little-endian.
 
-Descriptor состоит из:
-
-1. Fixed header.
-2. Buffer records.
-3. Channel records.
-4. Необязательного platform identifier.
-5. Необязательных существующих hardware metadata.
-6. Необязательных factory calibration bytes.
+Descriptor состоит **ровно** из fixed header, buffer records и channel records. Нет секций для platform/hardware/factory/IDME metadata, auxiliary values или extension registry.
 
 Здесь нет TLV registry, набора расширяемых message types или negotiation framework.
 
-### 5.3.1. Fixed header — 24 bytes
+### 5.3.1. Fixed header — 16 bytes
 
 | Offset | Field | Type |
 |---|---|---|
@@ -304,9 +293,7 @@ Descriptor состоит из:
 | 7 | Channel count | uint8 |
 | 8 | Total descriptor size | uint32 |
 | 12 | Total input block size | uint32 |
-| 16 | Platform info size | uint16 |
-| 18 | Hardware metadata size | uint16 |
-| 20 | Calibration size | uint32 |
+
 
 Magic используется только при инициализации descriptor, никогда в PCM frames. Значения размеров, записей и max limits полностью определены в §5.3.2–5.3.6.
 
@@ -345,19 +332,13 @@ Signed PCM — two's complement, little-endian. Ширина хранилища 
 
 `First channel[0]=0`; `First channel[i] = First channel[i−1] + Channels[i−1]`. Диапазон channel records каждого buffer непрерывен, каждая его запись имеет `Buffer index=i`. Сумма `Channels[i]` равна `Channel count`, все записи покрыты ровно один раз.
 
-`Role index` уникален и непрерывен **от 0 до N−1 внутри каждого Role** по всем buffers; индексы MIC независимы от REF. Это captured channel slots, не предполагаемая физическая геометрия. Как минимум один MIC обязателен; отсутствие REF выражается отсутствием REF channel records. Factory gain соотносится именно с captured MIC Role index.
+`Role index` уникален и непрерывен **от 0 до N−1 внутри каждого Role** по всем buffers; индексы MIC независимы от REF. Это captured channel slots, не предполагаемая физическая геометрия. Как минимум один MIC обязателен; отсутствие REF выражается отсутствием REF channel records. Role index описывает исключительно captured channel slots; он не кодирует factory calibration association.
 
-### 5.3.4. Переменные секции — raw hardware/IDME data
+### 5.3.4. Отсутствие metadata sections
 
-Здесь сохраняется только семантика универсального интерфейса: по возможности передать helper исходные, неизменённые bytes заводских источников, а не результаты их декодирования в Go. Подготовка DSP-ориентированных коэффициентов и квалификация совместимости в TECHO5 запрещены.
+После последнего channel record **descriptor заканчивается**; `Total descriptor size = 16 + 28 × Buffer count + 8 × Channel count`. Других записей/секций/паддинга нет. Go и C исправляются согласованно, с новыми независимыми exact-byte fixtures. Это **incompatible pre-deployment replacement** прежнего Stage02 codec с 24-byte header; не добавлять старый/новый decoder, negotiation или backward-compatibility. `ASP1` / version 1 и one-byte readiness `0xA5` можно сохранить, поскольку новая пара никогда не смешивается со старой; проверять exact revision pair перед интеграцией. Старые 24-byte descriptors отвергаются проверкой точной длины.
 
-- Если доступны идентификаторы аппаратной платформы или заводские IDME/metadata, передавать оригинальные bytes ровно в том виде, в каком их выдаёт исходный источник, сохраняя происхождение/имя источника лишь настолько, насколько необходимо для однозначного различения raw fields. Не использовать нормализованные результаты layout.Idme()/parseIdme() вместо raw values.
-- Нельзя в TECHO5 вычислять Q30 gains, MIC gain masks, availability/confidence, factory completeness, captured MIC slot association, производные платформенные identity или выполнять qualification для FrankenASP.
-- Недоступные источники отсутствуют. Нельзя заполнять пробелы синтетическими заводскими данными или выводить «raw» из уже разобранного значения.
-- Источник чтения и его raw bytes должен быть проверяемым; если исходные bytes недоступны через текущий stock API, stage исполнитель выбирает минимальный способ безопасно их прочесть без изменения штатной семантики Built-in.
-- FrankenASP самостоятельно распознаёт источники, разбирает IDME/calibration, сопоставляет MIC/REF и определяет пригодность для vendor DSP. Неподдерживаемый raw value — отказ до READY.
-
-Поля длин descriptor позволяют передать raw metadata, но **конкретное минимальное Go/C кодирование этих сырых значений и startup handshake проектирует исполнитель Stage02**, совместно с C decoder. Этот документ не вводит новый schema, кодировки, поля gain/identity, протокол negotiation или дополнительные управляющие сообщения. Если существующая таблица header требует корректировки ради raw byte contract, согласовать её в Stage02 в рамках минимального решения, с независимыми fixtures и обратной ссылкой на это требование.
+В metadata-free descriptor нет идентификации модели устройства. Поддержка/refusal определяется геометрией PCM и возможностью самого helper получить нужные локальные vendor resources через собственный launcher; никакой host-derived IDME или factory mask не требуется.
 
 ### 5.3.5. Формирование input block
 
@@ -369,8 +350,8 @@ Host последовательно пишет **список из Buffer count 
 - `Buffer count` представлен uint8: 1…255, **не ограничивать универсальный формат двумя buffers**. Реальные начальные backends могут предоставлять один или два; количество не является DSP-admission rule host.
 - `Channel count` представлен uint8, как минимум 1; сумма Channels всех buffers равна count.
 - Проверять offsets, channel layouts, границы **последнего sample**, packed PCM storage, `Valid bits` и `LSB shift`, переполнения и lengths перед доступом к буферам.
-- Для минимального v1 сохранить конечный обоснованный предел descriptor; прежние оценки по нормализованным platform info (36 bytes) и factory gain (144 bytes) **больше не доказывают достаточность 8192 bytes для raw IDME**. Исполнитель Stage02 проверяет реальные raw sources и выбирает bounded limit с независимыми fixtures. Этот лимит не является пределом PCM input и не обязывает C helper выделять максимум заранее.
-- Этот wire-limit ограничивает общий размер представления, а **не обязывает FrankenASP принимать все валидные комбинации**. Поддержку DSP geometry, sample rate, formats и calibration решает helper; неподдерживаемый descriptor может быть корректно отклонён до READY.
+- Максимальная структура ограничена шириной counts: header 16 + 255 buffer records × 28 + 255 channel records × 8 = **9196 bytes**. Проверять точное арифметическое равенство descriptor size формуле; размер PCM input независим, максимум 9196 нельзя выделять на каждый frame. Не добавлять metadata-dependent limits.
+- Этот wire-limit ограничивает представление PCM geometry, а **не обязывает FrankenASP поддерживать все валидные комбинации**. DSP geometry, sample rate, formats и наличие реально необходимых vendor resources проверяет конкретный helper до READY.
 
 Все проверки ограничены необходимой корректностью bytes и памяти; новый generic validation framework не создавать.
 
@@ -515,9 +496,9 @@ Descriptor может описывать:
 - Фактический channel order.
 - Sample rates.
 - Frame geometry.
-- Доступные raw hardware/IDME bytes без host-side gain/platform normalization.
+- Только фактические PCM buffer/channel descriptors; нет raw hardware/IDME fields.
 
-Проверять совместимость с конкретным DSP внутри FrankenASP; переданные исходные hardware/IDME bytes интерпретирует исключительно helper. **Сохранять уже подтверждённые рабочие конфигурации; неподдерживаемые частоты, layouts, форматы, отсутствие REF и временная геометрия отвергаются до READY.** Разработка новых resamplers и расширение vendor DSP compatibility не являются задачей рефакторинга.
+Проверять совместимость с конкретным DSP внутри FrankenASP. Factory assets/calibration читает или применяет vendor backend в собственной среде, подготовленной launcher; ничего такого не передаётся в descriptor. **Сохранять уже подтверждённые рабочие конфигурации; неподдерживаемые частоты, layouts, форматы, отсутствие REF и временная геометрия отвергаются до READY.** Разработка новых resamplers и расширение vendor DSP compatibility не являются задачей рефакторинга.
 
 ## 7.2. DSP adaptation
 
@@ -529,7 +510,7 @@ Descriptor может описывать:
 - Существующий DSP-specific resampling для уже поддерживаемых конфигураций (без обязательной разработки новых resamplers).
 - Существующее DSP input quantum conversion.
 - Vendor-specific FIFO.
-- Calibration interpretation.
+- Vendor Calibrator integration: calibration access/application through helper-owned resources, not PCM descriptor; no duplicate gains.
 - Vendor runtime qualification.
 
 Не предполагать, что TECHO5 подготовил данные под MIC4/REF2/96 kHz.
@@ -1216,9 +1197,9 @@ Session identity и отмена достаточны.
 - REF absent.
 - Channel order.
 - Buffer offsets и stride.
-- Доступные metadata.
-- Отсутствующие metadata.
-- Raw IDME/calibration bytes: побайтовая идентичность исходному fixture; вся derived calibration только на C стороне.
+- Header без metadata sections, descriptor точно заканчивается после channel records.
+- Descriptor/IPC не содержат IDME, factory paths, serials, raw calibration, Q30 или иных platform-specific данных.
+- Отсутствующие metadata не препятствуют валидному PCM descriptor; helper самостоятельно квалифицирует нужные ему ресурсы.
 - Invalid descriptor length.
 - Invalid buffer ranges.
 - Unsupported version.
@@ -1421,7 +1402,7 @@ Session identity и отмена достаточны.
 
 ### Протокол
 
-- [ ] Go/C используют один descriptor v1.
+- [ ] Go/C используют один PCM-only descriptor v1 (16-byte header, 28-byte buffers, 8-byte channels), без metadata sections.
 - [ ] READY заменяет старый handshake.
 - [ ] Каждый exchange возвращает mono S16LE/16 kHz/320 samples.
 - [ ] Нет NotReady.
@@ -1432,7 +1413,7 @@ Session identity и отмена достаточны.
 
 ### FrankenASP
 
-- [ ] Mapping/resampling/FIFO находятся в helper.
+- [ ] Mapping/resampling/FIFO находятся в helper. Factory vendor resources и calibration предоставляются/используются независимо от PCM IPC через launcher и vendor backend.
 - [ ] Initial 64-sample padding выполняется один раз.
 - [ ] Первый exchange возвращает полный frame.
 - [ ] Подтверждена работоспособность **программного** Go/C integration contract на поддерживаемых fixtures (аппаратное выполнение vendor DSP — отдельная приёмка).

@@ -1,5 +1,7 @@
 # 05 — Secure host session и первый paired Go/C wire gate
 
+**Внимание:** `04_HANDOFF.md` должен быть создан по PCM-only архитектуре; Go/C codec header=16 bytes, никаких IDME/metadata sections. Проверить resource prep launcher отдельно от PCM pipes.
+
 **Цель:** построить настоящий Go session/IPC runtime и принять его со скомпилированным новым C helper как точную пару commits. Production `mic.Source` пока не включает External; это делает 06 без временной state machine.
 
 ## Вход и чтение

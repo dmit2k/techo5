@@ -1,20 +1,20 @@
 # Межэтапный контракт чистой External ASP V3
 
-Статус пакета: **OWNER ACCEPTED 2026-10-31**. Stage01 принят, Stage02–07 выполняются отдельными поручениями. Контракт не расширяет согласованную архитектуру.
+Статус: **OWNER DIRECTED PCM-ONLY CORRECTION 2026-10-31**. Stage01 baseline принят. Прежние Stage02/03 commits технически приняты и интегрированы по **историческому raw-metadata контракту**, но для дальнейшего V3 прогресса требуется последовательная correction Stage02→Stage03 и новые acceptance/integration receipts. Stage04 заблокирован до их завершения. См. [PCM_ONLY_ARCHITECTURE_DECISION.md](PCM_ONLY_ARCHITECTURE_DECISION.md).
 
 ## 1. Авторитет и вход
 
 Читать [EXECUTION_BRANCH_STRATEGY.md](EXECUTION_BRANCH_STRATEGY.md), этот файл, конкретный TASK, указанные в TASK разделы [SPEC_V2_APPROVED.md](SPEC_V2_APPROVED.md) и принятый handoff. Полные исторические аудиты повторно читать не требуется.
 
-Приоритет: 58 решений с пятью финальными уточнениями → исправленная SPEC V2 для V3 restart (принята владельцем 2026-10-31); Git и clean implementation — по EXECUTION_BRANCH_STRATEGY. Исторический AUDIT_V2_FINAL относится к прежней normalized спецификации и не утверждает raw-IDME поправку. Фактический Git blob текущей SPEC_V2_APPROVED.md: `b324d2161e5ea316618f23bbe6d6aedf6c2df5c8`.
+Приоритет: принятое 2026-10-31 [PCM_ONLY_ARCHITECTURE_DECISION.md](PCM_ONLY_ARCHITECTURE_DECISION.md) как последняя поправка → скорректированные REGISTER_58_DECISIONS и FINAL_FIVE_CLARIFICATIONS → PCM-only SPEC_V2_APPROVED → TASKs. Исторический AUDIT_V2_FINAL и старые handoffs описывают предыдущие контракты, не являются приёмкой исправленного PCM-only кода. Фактический Git blob текущей SPEC_V2_APPROVED.md: `f3e1b00d1f5d184e345c0d2c79da8394435ba3a4`.
 
 Снимок исходных ревизий и проверенных точек интеграции находится в [DECOMPOSITION_PLAN.md](DECOMPOSITION_PLAN.md). Нельзя использовать документационное дерево или старый эксперимент как production baseline.
 
 ## 2. Минимальная система
 
-TECHO5 владеет hardware capture, чтением фактических metadata/доступной заводской калибровки, stock conversion/DSP/sensors, выбором режима, безопасным запуском, синхронным IPC, fallback и общей mono publication внутри `mic.Source`.
+TECHO5 владеет platform-specific hardware capture, фактической PCM geometry, SoftwareCut, существующим stock DSP/sensors (включая его **прежние stock-only** IDME readers), выбором режима, secure host launch, sync IPC, fallback и единой mono publication внутри `mic.Source`. Для External host **не читает и не передаёт** IDME/factory/platform metadata.
 
-Helper владеет qualification своего DSP, MIC/REF mapping, DSP-specific format/rate/quantum adaptation, calibration interpretation, DSP и FIFO. Сохраняются подтверждённые конфигурации; новых resamplers, metadata providers и расширения vendor compatibility нет. Представимость descriptor не означает DSP support.
+FrankenASP **launcher** владеет безопасной подготовкой разрешённых vendor assets, необходимых factory filesystem views и read-only IDME aliases до C child; C helper/vendor Calibrator владеет DSP qualification, MIC/REF mapping, format/rate/quantum adaptation, собственным чтением/применением calibration, DSP и FIFO. Сохраняются подтверждённые конфигурации; новых resamplers, metadata providers и расширения vendor compatibility нет. Представимость descriptor не означает DSP support.
 
 Built-in остаётся полным и работает без helper. Mixer/AEC/denoise/leveling не отключать ради CPU. Noise/facing/standout/levels получают штатные данные. History/MWW/STT/spectrum/mono subscribers получают один выбранный поток. `ListenRaw()`, SIP/intercom и stock WebRTC AEC switching сохраняются.
 
@@ -25,15 +25,15 @@ Host передаёт фактические buffers до скрытой stock c
 Не разделять interleaved MIC/REF, не менять channel order/format/rate и не собирать объединённый input ради DSP. Borrowed buffers используются синхронно до следующего read.
 
 Descriptor v1 один на External-сессию:
-- little-endian, magic ASP1 только в descriptor; header/buffer/channel records = 24/28/8 bytes;
+- little-endian, magic ASP1 только в descriptor; **PCM-only** header/buffer/channel records = **16/28/8 bytes**;
 - список физических buffers в порядке записи, непрерывные offsets, сумма Length = total input bytes;
 - S16LE, packed S24_3LE, S32LE; signed valid bits включают знак, LSB shift описывает выравнивание;
 - captured MIC/REF role indices; отсутствие REF — отсутствие REF records;
-- platform/factory IDME доступны только как raw byte-preserving source values §5.3.4; Go не создаёт normalized PlatformInfo/MicFactoryGain и не вычисляет Q30, masks, confidence, availability или captured MIC gain mapping;
-- bounded descriptor size обосновывается реальными raw metadata sources в Stage02, не предел PCM. Нет generic host лимита двумя buffers либо MIC4/REF2/96 kHz;
+- **нет ни одной platform/hardware/IDME/factory/calibration секции и auxiliary bytes**; descriptor length строго 16 + 28×buffers + 8×channels;
+- descriptor ограничен wire counts (максимум 9196 bytes); это не предел PCM. Нет generic host лимита двумя buffers либо MIC4/REF2/96 kHz;
 - проверяются sizes/overflow/last sample/channel coverage/reserved bytes; DSP admission только у helper.
 
-Не выдумывать metadata, unity gain или физическую геометрию. Factory IDME gain semantics и MIC-slot association находятся исключительно в helper. Host не вычисляет applied_to_pcm, confidence, masks или platform admission всего host. Vendor Calibrator остаётся авторитетом применения заводской калибровки в сохраняемом factory backend: host не масштабирует PCM коэффициентами.
+Не выдумывать metadata, unity gain или физическую геометрию. Host не знает factory IDME, MIC gain masks, Q30, PCM slot calibration mapping или platform admission. Vendor Calibrator является единственным авторитетом по калибровке конкретного DSP, после того как FrankenASP launcher подготовит его необходимые ресурсы. Ни host, ни launcher не масштабируют PCM factory coefficients. Stock identity reader/analog gain остаются нетронутыми.
 
 ## 4. IPC и время
 
@@ -83,7 +83,7 @@ Fallback меняет Active на Built-in, сохраняет Selected=External
 
 Сохранить secure traversal из /data, owner/mode/type checks, O_NOFOLLOW, FD pinning, защиту check/use и cleanup всех ветвей. Отдельная ручная активация не использует lifetime inode cache. Уменьшать дублирующую проверку можно только при сохранении реальных trust boundaries.
 
-Новый C repository содержит минимальный helper runtime, DSP adapter/bridge, необходимый launch substrate, build и tests. Если vendor backend требует Bionic launcher, перенести только доказанно необходимый FD/mount/exec путь с license/provenance; это не разрешение копировать старый проект целиком. Installer/OTA/download/release automation и proprietary runtime assets не импортировать. Программная проверка mock ABI не доказывает работу vendor DSP на устройстве.
+Новый C repository содержит минимальный helper runtime, DSP adapter/bridge, необходимый launch substrate, build и tests. **Для FrankenASP сохранение проверенной ответственности launcher за подготовку vendor factory assets и IDME path aliases является обязательным**, не опциональной альтернативой raw metadata в wire. Перенести только доказанно необходимые FD/mount/exec и resource mapping операции с license/provenance; это не разрешение копировать старый проект целиком. Installer/OTA/download/release automation и proprietary runtime assets не импортировать. Программная проверка mock ABI не доказывает работу vendor DSP на устройстве.
 
 ## 9. Контроль отсутствия legacy
 
@@ -99,7 +99,7 @@ Fallback меняет Active на Built-in, сохраняет Selected=External
 - TECHO5: `/home/gptlab/dev/techo5-v3-stageNN`, branch `experimental/external-asp-v3-dev-stageNN`;
 - C: `/home/gptlab/dev/frankenasp-v3-stageNN`, branch `experimental/v3-stageNN`.
 
-Начало только от последних принятых интеграционных SHA, записанных в `stages/NN_HANDOFF.md`. Не считать PASS тестов или наличие remote branch приёмкой владельца. Handoff содержит отдельно execution PASS/FAIL, acceptance PENDING/ACCEPTED и integration PENDING/COMPLETE. Следующий этап требует ACCEPTED + COMPLETE.
+Начало correction этапов **только от фактической последней интеграционной пары T03/C02** и последующих подтверждённых correction handoffs, а не от первоначальных баз Stage02. Исторические `stages/NN_HANDOFF.md` остаются неизменными; новые correction receipts отделяются от них. Не считать PASS тестов или наличие remote branch приёмкой владельца. Handoff содержит отдельно execution PASS/FAIL, acceptance PENDING/ACCEPTED и integration PENDING/COMPLETE. Следующий этап требует ACCEPTED + COMPLETE.
 
 Реальные новые commits создавать только на меняющейся стороне; вторую фиксировать неизменённым SHA. Нет пустых stage-веток/коммитов. Bootstrap и чистая приёмка используют отдельные detached verification worktrees; не имитируют изменение кода.
 
@@ -113,4 +113,4 @@ Stage executor делает локальные commits, возвращает о�
 
 Никаких Echo operations, установки или запуска target binaries автоматически. Offline compiled tests выполняются на anfisa-trainer в тестовых каталогах без воздействия на устройства.
 
-При фактическом противоречии: STOP, точный file/symbol/SHA, нарушенный пункт, воспроизводимый сценарий, минимальное исправление и объяснение ограничения. Не менять APPROVED V2 и не вводить новую архитектуру. Отсутствие toolchain — BLOCKED/FAIL соответствующей проверки, а не фиктивный PASS.
+При фактическом противоречии: STOP, точный file/symbol/SHA, нарушенный пункт, воспроизводимый сценарий, минимальное исправление и объяснение ограничения. Не менять скорректированную PCM-only архитектуру без нового решения владельца; при разночтении старых handoffs приоритет у новой поправки. Отсутствие toolchain — BLOCKED/FAIL соответствующей проверки, а не фиктивный PASS.

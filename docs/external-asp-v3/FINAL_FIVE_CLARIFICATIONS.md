@@ -1,6 +1,6 @@
 # TECHO5 External ASP — окончательные пять поправок к 58-пунктному реестру
 
-**Статус:** V3 restart corrected contract (OWNER ACCEPTED 2026-10-31); предыдущий архитектурный аудит завершён; реестр утверждён с пятью уточнениями (30 октября 2026).  
+**Статус:** PCM-only revision F1/F2 OWNER DIRECTED 2026-10-31; исторический аудит прежнего ТЗ завершён, но не проверял эту коррекцию. Смысл остальных F3–F5 неизменен.
 **Приоритет:** эти положения являются частью реестра и имеют приоритет при неоднозначном толковании его пунктов.  
 **Происхождение:** перенос из утверждённого в TECHO5-чате документа «TECHO5 External ASP — окончательные поправки к реестру рефакторинга».
 
@@ -10,7 +10,7 @@
 
 В External ASP helper переносится исключительно адаптация capture-данных к требованиям конкретного внешнего DSP: mapping, DSP-specific resampling, преобразование форматов, согласование квантов, FIFO, использование метаданных и проверка совместимости.
 
-Штатная аппаратная настройка capture, физическое чтение доступных необработанных IDME/metadata bytes и все преобразования Built-in остаются в TECHO5. Интерфейс External передаёт исходные значения без выполнения Go parseIdme/layout.Idme normalisation, Q30 conversion, masks, availability/confidence, MIC-slot association и platform qualification. Эти операции допустимы исключительно в конкретном helper.
+Штатная аппаратная настройка capture, включая существующие **stock-only** IDME readers, и все преобразования Built-in остаются в TECHO5. Интерфейс External передаёт **только исходный PCM и его геометрию**, без IDME/metadata/calibration bytes, derived values, Q30, masks, MIC-slot association или platform qualification. Для FrankenASP необходимую подготовку vendor assets и read-only factory IDME aliases выполняет собственный launcher до запуска C child; vendor Calibrator отвечает за применение коэффициентов. Эта PCM-only коррекция F1 утверждена владельцем 2026-10-31 и заменяет прежнее требование raw-IDME wire.
 
 **Причина:** универсальность host-интерфейса не означает перенос существующей hardware-логики TECHO5 в сторонние процессы.
 
@@ -23,7 +23,7 @@ Descriptor описывает фактическое представление 
 - Отдельные либо общий interleaved MIC/REF buffer.
 - Количество, порядок и размещение каналов.
 - S16, S24_3LE, S32 и соответствующие параметры разрядности и выравнивания.
-- Частоты, размеры блоков и доступные hardware metadata.
+- Частоты, размеры блоков и фактические PCM format/valid bits/stride; никаких vendor/factory metadata.
 - Явное отсутствие REF, если он недоступен.
 
 TECHO5 не разделяет interleaved PCM на MIC/REF buffers и не перепаковывает его специально для helper. Аппаратный REF передаётся без изменения: сохраняются ОБА stereo L/R канала, точные samples, порядок, sample rate, sample format и interleaving. Нет downmix, scaling, reordering, resampling, synthetic REF или скрытого отбора одного канала.

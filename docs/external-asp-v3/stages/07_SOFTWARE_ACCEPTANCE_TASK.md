@@ -1,5 +1,7 @@
 # 07 — Итоговая программная приёмка пары
 
+**Внимание:** финальная приёмка проверяет новую accepted correction lineage Stage02-R/Stage03-R/Stage04–06; историческая T03/C02 пара не является PCM-only final.
+
 **Режим:** software verification/review, без новых production features. Никакого Echo, target runtime/device launch или акустики.
 
 ## Вход и scope
@@ -21,7 +23,7 @@
 
 | ID | Обязательный acceptance |
 |---|---|
-| S01 | Повторить codec conformance C01–C07 на final pair, включая raw IDME byte-exact, REF L/R независимо, >2 buffers, no-REF representation, last sample/overflow и independent fixtures |
+| S01 | Повторить codec conformance C01–C07 на final pair, включая **отсутствие IDME/metadata в descriptor**, REF L/R независимо, >2 buffers, no-REF representation, last sample/overflow и independent fixtures |
 | S02 | Повторить compiled joint W01–W10: production Go session + C runtime/test-only ABI, startup >10s, shared 5s deadline, first/every output, fault/FD/stdout isolation |
 | S03 | Native/privacy N01–N08 и External ownership L07/L08: muted bytes, stock behavior, retained frames через reads/IPC/fallback/toggles |
 | S04 | Lifecycle/cancellation L03–L06: все 8 cancellation cases, synchronized publication, same PID/Rewire/XRUN, shutdown ordering, sole Wait/no leaks |

@@ -1,5 +1,7 @@
 # 06 — Source integration, Selected/Active, HA и lifecycle
 
+**Внимание:** Source использует PCM-only native descriptor; не подключать никакие raw-IDME providers или дополнительные launch metadata. Vendor resources принадлежат FrankenASP launcher.
+
 **Цель:** соединить принятые native/privacy и Go/C session components в минимальный production External path. Сразу завершить control и lifecycle, без временной preflight/confirmation/state architecture.
 
 ## Вход

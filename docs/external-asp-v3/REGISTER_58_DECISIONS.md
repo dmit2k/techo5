@@ -2,7 +2,7 @@
 
 **Дата согласования:** 30 октября 2026 года  
 **Основание:** три раунда архитектурного аудита и согласованные решения в TECHO5/FrankenASP-чате.  
-**Статус:** редакционно исправленный для V3 restart реестр, новая raw-IDME/REF поправка принята владельцем 2026-10-31; ранее утверждённая редакция сохранена в истории; пять приоритетных поправок хранятся отдельно в `FINAL_FIVE_CLARIFICATIONS.md`.
+**Статус:** PCM-only architecture correction OWNER DIRECTED 2026-10-31; прежняя raw-IDME/REF редакция сохранена в истории. Приоритет у `PCM_ONLY_ARCHITECTURE_DECISION.md`; пять поправок — в `FINAL_FIVE_CLARIFICATIONS.md`.
 
 > **Происхождение:** текстовая редакционная копия утверждённого в чате 58-пунктного реестра. Нумерация и смысл решений сохранены. Для дословной сверки с оригинальной формулировкой использовать сообщение в исходном чате, начинающееся «TECHO5 External ASP — финальный реестр архитектурных решений для утверждения». Это не новая архитектура и не замена пяти поправок.
 >
@@ -13,8 +13,8 @@
 1. **External ASP — необязательное расширение.** Без helper TECHO5 полностью использует Built-in, не заводя вторую аудиосистему. Почему: цель — небольшой upstream PR. [А1–А3]
 2. **Точка интеграции — `mic.Source`.** Не создавать отдельных capture owners, supervisor или путей публикации. Почему: все потребители уже используют общий источник. [А1, А2, Д]
 3. **Host предоставляет исходный MIC/REF PCM byte-for-byte.** Где stock делает конверсию, External получает данные до неё. Оба аппаратных stereo REF L/R передаются в исходном порядке, формате, частоте и interleaving, без scaling, reordering, downmix и синтезирования REF. Почему: внешнему DSP нужна исходная акустическая информация. [А1–А3]
-4. **Descriptor описывает фактический capture.** Частоты, форматы, bit depth/alignment, каналы/порядок, размеры блоков и только доступные исходные bytes hardware/IDME metadata, без host-side normalisation, confidence, Q30 или MIC-slot calibration mapping. Не навязывать DSP-требования. [А2, А3, Д]
-5. **DSP-специфическая адаптация — только в helper.** Mapping, REF stereo L/R selection/reordering, scaling, resampling, quantum/FIFO, factory IDME parsing, Q30/gain/masks, MIC-slot interpretation и qualification не выполняются в generic TECHO5. *Границы этого пункта уточнены финальной поправкой №1*: штатный hardware capture/metadata/Built-in остаются в TECHO5. [Д]
+4. **Descriptor описывает только фактический PCM capture.** Частоты, форматы, bit depth/alignment, MIC/REF каналы/порядок и размеры блоков; ни одного hardware/IDME/calibration byte, platform identity или DSP-derived поля. Не навязывать DSP-требования. [А2, А3, Д]
+5. **DSP-специфическая адаптация — только в helper.** Mapping, REF stereo L/R selection/reordering, scaling, resampling, quantum/FIFO, vendor factory-resource access и DSP qualification не выполняются в generic TECHO5. *PCM-only уточнение №1*: stock hardware/Built-in и их прежние readers остаются в TECHO5; FrankenASP launcher отдельно готовит vendor files/IDME aliases, C factory backend применяет calibration. Ни чтение raw metadata ради External, ни Q30/gain/masks/slot mapping в host не добавлять. [Д]
 6. **Удалить platform admission в generic host.** Никаких Athena-only whitelist, MIC4/REF2/96-kHz ограничений ради FrankenASP. [А1–А3, Д]
 7. **Использовать существующий PCM напрямую, если capture не конвертирует его.** Не плодить платформенные обёртки. [А3, Д]
 8. **Минимальный универсальный native tap при скрытой stock-конверсии.** Допустим необязательный `NativeFormat()` / `ReadWithNative()` до `convert()`, но имена не обязательны. [А3]
