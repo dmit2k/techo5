@@ -1,11 +1,16 @@
 package mic
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/HuskerMinion/techo5/echod/internal/asp"
 	"github.com/HuskerMinion/techo5/echod/internal/lib/alsa"
 )
+
+// errNativeGeometry identifies an optional External descriptor failure, not
+// a capture read failure. Only this error can be downgraded to stock PCM.
+var errNativeGeometry = errors.New("mic: native geometry unavailable")
 
 // NativeBlock borrows the capture's original physical buffers until the NEXT capture Read.
 // A synchronous consumer must finish before that read. It must not keep these bytes or
@@ -140,14 +145,14 @@ func readCaptured(pcm capture, raw []byte, policy func() bool, visit func(Native
 		if cut {
 			clear(raw[:n])
 		}
-		return n, cut, fmt.Errorf("mic: native capture is unavailable on this stock-only backend")
+		return n, cut, fmt.Errorf("%w: stock-only backend", errNativeGeometry)
 	}
 	block, err := plainNative(raw[:n], device.Config())
 	if err != nil {
 		if cut {
 			clear(raw[:n])
 		} // fail closed even for unsupported geometry
-		return n, cut, err
+		return n, cut, fmt.Errorf("%w: %v", errNativeGeometry, err)
 	}
 	if cut {
 		zeroNative(block)
