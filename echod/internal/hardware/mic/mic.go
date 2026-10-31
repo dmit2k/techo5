@@ -340,7 +340,8 @@ func (s *Source) Run(ctx context.Context) error {
 		default:
 		}
 
-		n, err := pcm.Read(raw)
+		// One policy decision after capture, at the shared native/stock boundary.
+		n, cut, err := readCaptured(pcm, raw, privacy.SoftwareCut, nil)
 		if err != nil {
 			if errors.Is(err, alsa.ErrOverrun) {
 				if overruns++; overruns == 1 || overruns%100 == 0 {
@@ -355,7 +356,7 @@ func (s *Source) Run(ctx context.Context) error {
 			}
 			return err
 		}
-		s.broadcast(raw[:n])
+		s.broadcastWithCut(raw[:n], cut)
 	}
 }
 
@@ -381,12 +382,17 @@ func (s *Source) reportDrops() {
 // broadcast hands the frame to every listener, dropping it for any that is behind. The mono mix is
 // only computed when something wants it.
 func (s *Source) broadcast(raw []byte) {
+	s.broadcastWithCut(raw, privacy.SoftwareCut())
+}
+
+// broadcastWithCut shares the capture block's single SoftwareCut decision.
+func (s *Source) broadcastWithCut(raw []byte, cut bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// A software-only mute cuts here, before anything reads the frame: what is not handed on cannot
 	// be heard, kept or streamed.
-	if privacy.SoftwareCut() {
+	if cut {
 		clear(raw)
 	}
 
