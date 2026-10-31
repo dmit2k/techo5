@@ -40,7 +40,7 @@ go version
 
 The SHA-256 above was obtained from the official `go.dev/dl/?mode=json&include=all` release metadata and verified against the downloaded 66,768,540-byte archive.
 
-**Remote-executor caveat, not a tar or Ubuntu issue:** during the original environment setup, GNU tar 1.35 failed with `Function not implemented` **only when run through a restricted remote command-execution service bridge**. A follow-up A/B reproduction on **the same `independent build host` host, using the same tar archive**, succeeded under the regular Desktop Commander service. `strace` isolated the failing syscall to `openat2(..., RESOLVE_BENEATH) = -1 ENOSYS` in the restricted bridge (3 seccomp filters, `Seccomp: 2`), whereas it succeeded under the regular service (`Seccomp: 0`). This is a **sandbox/syscall-filter limitation of that particular remote executor**, not evidence of a GNU tar, archive, filesystem, or Ubuntu 26.04 defect. **Normal users should use the standard `tar -xzf` command above.** A Python `tarfile` extraction was used only as a temporary diagnostic workaround in the restricted bridge and is **not required** for FrankenASP builds.
+Standard host installations can use the official archive and extraction commands above. Local execution-environment diagnostics are not part of the portable build procedure.
 
 ## Clean source checkout and tests
 
@@ -101,7 +101,7 @@ libasp_stream_worker.so SHA-256:
 
 For normal Android NDK setup, extract the official ZIP with `unzip`, which preserves executable permissions and symbolic links. During this independent validation, a Python `zipfile` extraction was used instead; because that API does not automatically restore Unix executable bits and symlinks, those attributes were subsequently restored from the ZIP metadata before running the NDK compiler. **This is not an Android NDK or FrankenASP problem, nor is Python ZIP extraction a recommended installation method.**
 
-**Build execution resources:** the independent host has 31 GiB RAM, but its private private infrastructure execution bridges imposed **768 MiB service cgroup memory limits**, which caused an unrelated Go compiler process to be killed by the environment. The final Go CI therefore runs through the already connected Desktop Commander service on the **same `independent build host` host** without that artificial 768 MiB limit. This is an execution-adapter limitation, not a functional or hardware compatibility claim.
+Build validation requires a functioning compiler toolchain and sufficient memory. CI resource limits depend on the selected execution environment.
 
 ## Scope and safety
 

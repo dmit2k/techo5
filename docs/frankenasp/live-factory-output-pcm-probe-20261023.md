@@ -119,5 +119,4 @@ The probe source and tests live under
 `openFactoryPCMProbe()`, `Process20ms()` and `factoryProbe.push()`.
 It is disabled by default, uses mode 0600 private files and a strict
 2s warmup + 8s file size/duration limit. The private PCM files and
-the full Version33 decoded per-packet JSON remain on the owner's
-trainer VM and must not be committed to GitHub.
+the full Version33 decoded per-packet JSON remain on an access-controlled local environment and must not be committed to GitHub.
