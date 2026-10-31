@@ -4,12 +4,13 @@
 
 - **Stage:** 01 — Baseline & Git Bootstrap; **TASK:** [01_BASELINE_BOOTSTRAP_TASK.md](01_BASELINE_BOOTSTRAP_TASK.md); **дата:** 2026-10-31 (Europe/Riga); **исполнитель:** ChatGPT, Stage01 execution; **публикация:** documentation coordinator по прямому распоряжению владельца после исполнения.
 - **Нормативный docs input commit:** 06bb7e8a56ffd0406626d4f218f7dc796d799d03, ветка TECHO5 experimental/v3-design-staging. Фактический Git blob docs/external-asp-v3/SPEC_V2_APPROVED.md: **c754947d81c77860f4221135b84956249f956935**. Устаревшие placeholders и прежние blob SHA не применяются.
+- **Owner review docs commit:** f13882667abe58e42b50df1448c1cc4f34a021ea (исправлены ошибочный старый SPEC blob в MASTER_CONTRACT и преждевременно заданные пять байт READY в Stage02/05); утверждение Stage01 включает исправленный документационный контракт. Исторический input docs commit 06bb7e8a остаётся фактом времени выполнения.
 - **Execution result:** **PASS** для Stage01 baseline/bootstrap и доступных обязательных offline проверок B01–B05; частичное покрытие B04 и недоступные проверки явно описаны в §5–6. Это **не** означает PASS полного CI, Android NDK, Bionic или реального устройства.
-- **Owner acceptance:** **PENDING** — явное решение владельца о принятии исполнения Stage01 отсутствует. Публикация этого документа не является таким решением; owner-accepted SHA до принятия не назначены.
+- **Owner acceptance:** **ACCEPTED** — явное решение владельца в чате от 2026-10-31: «ок, попробую еще раз тебе довериться принимаю, идем дальше». Принят именно Stage01 baseline/bootstrap с документированными ограничениями B04 (§5–6), а не полный CI, Android NDK, C/Bionic runtime или аппаратные испытания.
 - **Integration:** **COMPLETE (только Stage01 bootstrap refs)**: оба существующих integration refs реально проверены на frozen main SHA, без новых code commits/merge/FF. Дальнейшая integration Stage02 не производилась.
 - **Software gate:** baseline; не codec/native/C/paired wire/full Source/final software gate.
 - **Hardware tests:** **НЕ ВЫПОЛНЕНЫ**. **Acoustic tests:** **НЕ ВЫПОЛНЕНЫ**. **Vendor runtime on Echo:** **НЕ ВЫПОЛНЕН**.
-- **Следующий Stage02 не разрешён автоматически:** необходимо явное owner ACCEPTED для Stage01 плюс подтверждение input pair; публикация handoff сама по себе не запускает разработку.
+- **Stage02:** условие owner ACCEPTED для Stage01 выполнено. Переход к Stage02 допускается отдельным исполнительским поручением после повторной проверки remote input pair и текущего docs HEAD. Публикация этого handoff не является автоматическим запуском Stage02.
 
 ## 2. Ревизии, provenance, worktrees
 
@@ -24,7 +25,7 @@
 | Worktree | /home/gptlab/dev/techo5-v3-stage01 | /home/gptlab/dev/frankenasp-v3-stage01 |
 | Stage code commits | **Нет** (административное исключение) | **Нет** |
 | Tested candidate SHA | 62603a7854283a3a07473a17c831c6ef0fd6f8d4 | e986ae18643e08e95f29a38aae1dd74762f6362e |
-| Owner-accepted candidate SHA | **PENDING**, не назначен | **PENDING**, не назначен |
+| Owner-accepted candidate SHA | **62603a7854283a3a07473a17c831c6ef0fd6f8d4** (Stage01 baseline accepted) | **e986ae18643e08e95f29a38aae1dd74762f6362e** (Stage01 baseline accepted) |
 | Output integration SHA | **62603a7854283a3a07473a17c831c6ef0fd6f8d4** (unchanged) | **e986ae18643e08e95f29a38aae1dd74762f6362e** (unchanged) |
 | Remote main и integration verified | Оба == T01; 2026-10-31 | Оба == C01; 2026-10-31 |
 | Clean verification worktree | git status --short → пусто | git status --short → пусто |
@@ -148,10 +149,10 @@ export GOMAXPROCS=2 GOFLAGS=-p=1
 
 ## 7. Передача Stage02 и owner decision
 
-- **Следующий по плану:** Stage02 — Descriptor Codec, **только после явного owner acceptance Stage01** и проверки неизменности обоих remote integration refs.
+- **Следующий по плану:** Stage02 — Descriptor Codec; owner acceptance Stage01 получен 2026-10-31, перед стартом Stage02 необходимо повторно проверить оба remote integration refs и обновлённый docs HEAD.
 - **Exact input pair:** TECHO5 experimental/external-asp-v3-dev-main **62603a7854283a3a07473a17c831c6ef0fd6f8d4**; C experimental/v3-dev-main **e986ae18643e08e95f29a38aae1dd74762f6362e**.
 - Stage02 получает stock mic/pairedCapture/native conversion, layout raw IDME источники из §4, documented toolchain/env из §5, и необходимость сохранять byte-exact buffers/metadata по SPEC V2 и MASTER_CONTRACT. Ни один новый Stage02 API не считается уже созданным.
-- **Owner acceptance: PENDING**. Владельцу необходимо отдельно явно принять или отклонить handoff; пока этого нет, owner-accepted candidate SHA в §2 отсутствуют. **Bootstrap integration remote status: COMPLETE** только для frozen initial refs.
+- **Owner acceptance: ACCEPTED (2026-10-31)**. Решение владельца в чате: «ок, попробую еще раз тебе довериться принимаю, идем дальше». Принята frozen pair из §3, ограничения B04 и будущие toolchain/CI проверки из §6 сохраняются. **Bootstrap integration remote status: COMPLETE** только для frozen initial refs. Следующая реализация Stage02 не осуществлялась при фиксации решения.
 - Аппаратное тестирование, Echo deploy, vendor runtime launch, acoustics **не разрешены автоматически**.
 
 ## 8. Публикация координатором
