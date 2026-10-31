@@ -2,7 +2,6 @@ package mic
 
 import (
 	"github.com/HuskerMinion/techo5/echod/internal/asp"
-	"github.com/HuskerMinion/techo5/echod/internal/layout"
 	"github.com/HuskerMinion/techo5/echod/internal/lib/alsa"
 )
 
@@ -116,19 +115,8 @@ func readCaptured(pcm capture, raw []byte, policy func() bool, visit func(Native
 	return n, cut, nil
 }
 
-// DescriptorWithRaw attaches only original source bytes to the Stage02 descriptor.
-// The PCM slices remain borrowed separately; no PCM copies or metadata interpretation.
-func (n NativeBlock) DescriptorWithRaw(platform, hardware, factory []layout.RawSource) asp.Descriptor {
-	d := n.Geometry
-	add := func(s []layout.RawSource) []asp.RawField {
-		var fields []asp.RawField
-		for _, src := range s {
-			fields = append(fields, asp.RawField{Source: src.Source, Bytes: src.Bytes})
-		}
-		return fields
-	}
-	d.Platform = add(platform)
-	d.Hardware = add(hardware)
-	d.Factory = add(factory)
-	return d
+// Descriptor returns only the already captured PCM geometry. Input bytes remain
+// borrowed in NativeBlock.Buffers; no metadata or PCM conversion is performed.
+func (n NativeBlock) Descriptor() asp.Descriptor {
+	return n.Geometry
 }

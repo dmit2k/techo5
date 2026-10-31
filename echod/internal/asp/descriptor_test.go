@@ -16,24 +16,23 @@ func b(o, l, r, f, s uint32, format, valid, shift, channels uint8, first uint16)
 	return Buffer{o, l, r, f, s, format, valid, shift, channels, first}
 }
 func c(bi, role uint8, idx uint16, off uint32) Channel { return Channel{bi, role, idx, off} }
-func f(name string, val []byte) RawField               { return RawField{name, val} }
+
+// vectors are hand-specified PCM geometries, independent of the Python wire oracle.
 func vectors() map[string]Descriptor {
-	big := make([]byte, 12000)
-	for i := range big {
-		big[i] = byte((i*37 + 0x80) & 255)
+	maxBuffers := make([]Buffer, 255)
+	maxChannels := make([]Channel, 255)
+	for i := 0; i < 255; i++ {
+		maxBuffers[i] = b(uint32(i*2), 2, 16000, 1, 2, FormatS16, 16, 0, 1, uint16(i))
+		maxChannels[i] = c(uint8(i), RoleMIC, uint16(i), 0)
 	}
 	return map[string]Descriptor{
 		"stereo_s24": {
 			Buffers:  []Buffer{b(0, 36, 16000, 2, 18, FormatS24_3, 24, 0, 6, 0)},
 			Channels: []Channel{c(0, RoleMIC, 0, 0), c(0, RoleMIC, 1, 3), c(0, RoleMIC, 2, 6), c(0, RoleMIC, 3, 9), c(0, RoleREF, 0, 12), c(0, RoleREF, 1, 15)},
-			Platform: []RawField{f("/proc/idme/device_type_id", []byte{'A', 'B', 0, 255})},
-			Hardware: []RawField{f("/proc/device-tree/idme/hw_rev/value", []byte{'v', '1', 0, 128})},
-			Factory:  []RawField{f("/proc/idme/miccal.0", []byte{0, 129, 255, 127}), f("/proc/idme/miccal.1", []byte{'0', 0, 'A', 254})},
 		},
 		"separate_three": {
 			Buffers:  []Buffer{b(0, 8, 16000, 2, 4, FormatS16, 16, 0, 2, 0), b(8, 4, 16000, 2, 2, FormatS16, 16, 0, 1, 2), b(12, 4, 16000, 2, 2, FormatS16, 16, 0, 1, 3)},
 			Channels: []Channel{c(0, RoleMIC, 0, 0), c(0, RoleMIC, 1, 2), c(1, RoleREF, 0, 0), c(2, RoleREF, 1, 0)},
-			Platform: []RawField{f("/proc/idme/productid2", nil)},
 		},
 		"s32_low24": {
 			Buffers:  []Buffer{b(0, 16, 48000, 2, 8, FormatS32, 24, 0, 2, 0)},
@@ -51,11 +50,7 @@ func vectors() map[string]Descriptor {
 			Buffers:  []Buffer{b(0, 24, 16000, 2, 12, FormatS24_3, 20, 4, 2, 0)},
 			Channels: []Channel{c(0, RoleREF, 0, 7), c(0, RoleMIC, 0, 0)},
 		},
-		"large_factory": {
-			Buffers:  []Buffer{b(0, 4, 16000, 2, 2, FormatS16, 16, 0, 1, 0)},
-			Channels: []Channel{c(0, RoleMIC, 0, 0)},
-			Factory:  []RawField{f("/proc/idme/miccal.0", big)},
-		},
+		"max_255": {Buffers: maxBuffers, Channels: maxChannels},
 	}
 }
 func TestIndependentExpectedBytes(t *testing.T) {
@@ -71,8 +66,19 @@ func TestIndependentExpectedBytes(t *testing.T) {
 				t.Fatal(e)
 			}
 			if !bytes.Equal(got, expected) {
-				t.Fatalf("writer differs from independent vector at %s", name)
+				t.Fatalf("writer differs from independent PCM-only vector at %s", name)
 			}
+			if len(got) != HeaderSize+len(desc.Buffers)*BufferSize+len(desc.Channels)*ChannelSize ||
+				len(got) > MaxDescriptorSize || got[4] != 1 || got[5] != 0 {
+				t.Fatal("metadata/trailing fields or incorrect PCM-only header")
+			}
+			if HeaderSize != 16 || MaxDescriptorSize != 9196 {
+				t.Fatal("PCM-only contract constants")
+			}
+			if name == "max_255" && len(got) != 9196 {
+				t.Fatal("maximum descriptor not 9196")
+			}
+
 			if decoder != "" {
 				cmd := exec.Command(decoder)
 				cmd.Stdin = bytes.NewReader(got)
@@ -123,6 +129,18 @@ func TestReadyAndStereoREF(t *testing.T) {
 		}
 	}
 }
+func TestPCMBlocksAreByteExactAcrossCompiledC(t *testing.T) {
+ decoder:=os.Getenv("ASP_C_DECODER")
+ if decoder=="" {t.Skip("compiled C decoder supplied by C07 matrix")}
+ for _,name:=range []string{"stereo_s24","separate_three"} {
+  desc,err:=Encode(vectors()[name]);if err!=nil{t.Fatal(err)}
+  pcm,err:=os.ReadFile(filepath.Join("testdata",name+".pcm"));if err!=nil{t.Fatal(err)}
+  cmd:=exec.Command(decoder,"--roundtrip")
+  cmd.Stdin=bytes.NewReader(append(desc,pcm...))
+  got,err:=cmd.Output();if err!=nil{t.Fatalf("%s: %v",name,err)}
+  if !bytes.Equal(got,pcm){t.Fatalf("%s: changed physical PCM bytes",name)}
+ }
+}
 func TestRejectBadWriterInputs(t *testing.T) {
 	base := vectors()["ref_absent"]
 	bad := map[string]func(*Descriptor){
@@ -138,9 +156,6 @@ func TestRejectBadWriterInputs(t *testing.T) {
 		"bad role":        func(d *Descriptor) { d.Channels[1].Role = 3 },
 		"buffer index":    func(d *Descriptor) { d.Channels[0].BufferIndex = 1 },
 		"channel overlap": func(d *Descriptor) { d.Channels[1].FrameOffset = 1 },
-		"raw dup":         func(d *Descriptor) { d.Factory = []RawField{f("miccal.0", nil), f("miccal.0", nil)} },
-		"raw bad name":    func(d *Descriptor) { d.Factory = []RawField{f("bad\x00name", nil)} },
-		"raw too large":   func(d *Descriptor) { d.Factory = []RawField{f("miccal.0", make([]byte, 32769))} },
 	}
 	for name, mutate := range bad {
 		t.Run(name, func(t *testing.T) {
@@ -170,5 +185,28 @@ func TestSharedSHA256Manifest(t *testing.T) {
 		if hex.EncodeToString(digest[:]) != parts[0] {
 			t.Fatal(fmt.Sprintf("digest mismatch: %s", parts[1]))
 		}
+	}
+}
+
+// The encoder has no raw metadata fields and cannot append unknown sections.
+func TestPCMOnlyNoExtraSection(t *testing.T) {
+	d := vectors()["ref_absent"]
+	got, err := Encode(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 60 {
+		t.Fatalf("unexpected descriptor length %d", len(got))
+	}
+	expect, err := os.ReadFile("testdata/ref_absent.bin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, expect) {
+		t.Fatal("exact PCM-only wire oracle mismatch")
+	}
+	// At 16 bytes the first buffer starts immediately: no extra 8-byte header.
+	if got[16] != 0 || got[20] != 8 || got[24] != 0x80 || got[25] != 0x3e {
+		t.Fatalf("16-byte boundary not PCM buffer record: %x", got[16:28])
 	}
 }
