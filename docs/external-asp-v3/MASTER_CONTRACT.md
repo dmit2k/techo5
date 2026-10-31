@@ -6,7 +6,7 @@
 
 Читать [EXECUTION_BRANCH_STRATEGY.md](EXECUTION_BRANCH_STRATEGY.md), этот файл, конкретный TASK, указанные в TASK разделы [SPEC_V2_APPROVED.md](SPEC_V2_APPROVED.md) и принятый handoff. Полные исторические аудиты повторно читать не требуется.
 
-Приоритет: 58 решений с пятью финальными уточнениями → исправленная SPEC V2 для V3 restart (принята владельцем 2026-10-31); Git и clean implementation — по EXECUTION_BRANCH_STRATEGY. Исторический AUDIT_V2_FINAL относится к прежней normalized спецификации и не утверждает raw-IDME поправку. Фактический Git blob текущей SPEC_V2_APPROVED.md: `c754947d81c77860f4221135b84956249f956935`.
+Приоритет: 58 решений с пятью финальными уточнениями → исправленная SPEC V2 для V3 restart (принята владельцем 2026-10-31); Git и clean implementation — по EXECUTION_BRANCH_STRATEGY. Исторический AUDIT_V2_FINAL относится к прежней normalized спецификации и не утверждает raw-IDME поправку. Фактический Git blob текущей SPEC_V2_APPROVED.md: `b324d2161e5ea316618f23bbe6d6aedf6c2df5c8`.
 
 Снимок исходных ревизий и проверенных точек интеграции находится в [DECOMPOSITION_PLAN.md](DECOMPOSITION_PLAN.md). Нельзя использовать документационное дерево или старый эксперимент как production baseline.
 

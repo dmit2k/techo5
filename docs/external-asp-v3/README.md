@@ -27,6 +27,6 @@ AUDIT_V2_FINAL.md is preserved as an **historical audit of the pre-restart V2**.
 
 ## Git and execution status
 
-Cleanup and frozen-base documentation commit `06bb7e8a56ffd0406626d4f218f7dc796d799d03` completed. Stage01 evidence is in `stages/01_HANDOFF.md`, with owner acceptance recorded by commit `79f0803b38bf39de3362075f153600c26dff1b65`. Both main and experimental dev-main remain frozen at the source bases above. The corrected SPEC blob is `c754947d81c77860f4221135b84956249f956935`.
+Cleanup and frozen-base documentation commit `06bb7e8a56ffd0406626d4f218f7dc796d799d03` completed. Stage01 evidence is in `stages/01_HANDOFF.md`, with owner acceptance recorded by commit `79f0803b38bf39de3362075f153600c26dff1b65`. Both main and experimental dev-main remain frozen at the source bases above. The corrected SPEC blob is `b324d2161e5ea316618f23bbe6d6aedf6c2df5c8`.
 
 Stage02–07 require separately authorized execution and acceptance/integration. No new FF, reset or force-push; no Echo deployment or hardware tests. Historical rejected code is reference-only.

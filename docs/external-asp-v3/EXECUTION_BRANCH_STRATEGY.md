@@ -26,7 +26,7 @@
 - `dmit2k/techo5:experimental/asp2-host-v1.6.12-test`: `9ef0792a90e1dd0f24ead40b72490ed844d2169e` — справочный код, **не база V3**.
 - `dmit2k/FrankenASP:main`: `52d51de33e3105501b298c1c214db55f05a2eb82` — справочный код, **не база V3**.
 - `dmit2k/frankenasp-v3:main`: `e986ae18643e08e95f29a38aae1dd74762f6362e` — initial; после одобренного cleanup не менять.
-- Новый SPEC_V2_APPROVED.md получит SHA в одном docs commit после разрешения cleanup; прежний blob eb678cac теперь устарел. Старый AUDIT_V2_FINAL относится к normalized metadata contract; raw-IDME поправка требует принятия владельцем.
+- Принятая владельцем 2026-10-31 редакция SPEC_V2_APPROVED.md имеет Git blob `b324d2161e5ea316618f23bbe6d6aedf6c2df5c8`. Прежний blob eb678cac относится к историческому контракту; AUDIT_V2_FINAL не является независимым аудитом новой raw-IDME редакции.
 
 **Фактический bootstrap:** cleanup завершён, Go и C dev-main уже существуют на T01=62603a78 и C01=e986ae18. Stage01 owner acceptance сохранён в `stages/01_HANDOFF.md`. Оба main неизменны. При расхождении refs — STOP без самовольного reset/force-push.
 
