@@ -12,7 +12,7 @@
 - **Codec component checks C01–C07: PASS** (all tested on final local Go/C candidate commits).
 - **Overall Stage02 execution: PASS (2026-10-31)**. C01–C07 were completed on the exact Go/C candidate commits. Initial HTTPS/SSH push from `anfisa-trainer` failed, but delivery blocker was **resolved** by transferring the original Git objects via SSH to authorized `gptlab-core` and pushing the unchanged commits with its existing GitHub CLI authentication. Both remote stage refs and unchanged main/dev-main refs were independently verified. Focused Go↔compiled C and C codec tests were also re-run successfully after publication.
 - **Acceptance: ACCEPTED (delegated technical decision, 2026-10-31).** The owner requested independent analysis and a decision («мы можем принять Stage 02? анализ и принятие решения! ТЫ должна вести меня через реализацию согласованного проекта!»). Acting in the entrusted coordinator/reviewer role, a fresh review accepted the exact Go/C codec pair within Stage02 scope. This does not assert that the owner personally uttered «принимаю Stage02». Independent tests were rerun: C `make test` and `make sanitize` PASS; Go `go test -race -count=1 ./internal/asp`, `go vet ./internal/asp`, and stock `go test -count=1 ./internal/hardware/mic ./internal/layout` PASS; both copies of `SHA256SUMS` verified.
-- **Integration: PENDING**. Neither integration ref was moved; Stage03 is NOT authorized.
+- **Integration: COMPLETE (2026-10-31)**. Both code dev-main refs fast-forwarded to the exact accepted Stage02 candidate SHAs by documentation/integration coordinator using direct SSH push from `anfisa-trainer`. GitHub remote `main`, both dev-main, both Stage02 refs, and clean worktrees verified. Stage03 may begin under its separate assignment from this accepted pair.
 - Software gate: **codec component only**, not paired runtime/Source or hardware.
 - Hardware, Echo deployment, acoustic measurement and vendor DSP runtime on Echo: **НЕ ВЫПОЛНЕНЫ**.
 
@@ -29,14 +29,14 @@
 | Tested local candidate SHA | **`78a01f897b89dd462576e6e617fbc8216c4518dd`** | **`0f39216a5240306344af7c2457716f4eaa466f40`** |
 | Published Stage02 SHA | **`78a01f897b89dd462576e6e617fbc8216c4518dd`**, verified remote | **`0f39216a5240306344af7c2457716f4eaa466f40`**, verified remote |
 | Accepted candidate (delegated technical decision) | **`78a01f897b89dd462576e6e617fbc8216c4518dd`** | **`0f39216a5240306344af7c2457716f4eaa466f40`** |
-| Output integration SHA | Unchanged: `62603a7854283a3a07473a17c831c6ef0fd6f8d4` | Unchanged: `e986ae18643e08e95f29a38aae1dd74762f6362e` |
+| Output integration SHA (2026-10-31, verified) | **`78a01f897b89dd462576e6e617fbc8216c4518dd`** (FF from T01) | **`0f39216a5240306344af7c2457716f4eaa466f40`** (FF from C01) |
 | Worktree status | `git status --porcelain` empty | `git status --porcelain` empty |
 
 Final **locally tested** candidate pair:
 `T_candidate=78a01f897b89dd462576e6e617fbc8216c4518dd`;
 `C_candidate=0f39216a5240306344af7c2457716f4eaa466f40`.
 
-After successful original-SHA stage publication, remote `main` and code dev-main were independently verified unchanged:
+Historical stage-publication snapshot (before the separate, subsequently completed integration):
 - TECHO5 main/dev-main: `62603a7854283a3a07473a17c831c6ef0fd6f8d4`.
 - C main/dev-main: `e986ae18643e08e95f29a38aae1dd74762f6362e`.
 - Documentation design-staging: `77536bdcd15519eab7d28c0dab2ea5d44f060591`.
@@ -145,13 +145,22 @@ Both remote branch HEADs **were verified equal** to the exact tested pair via Gi
 
 Authentication failure was an **execution-environment issue**, not a descriptor design defect. It is **RESOLVED**; C07 remote publication now satisfies the exact-SHA gate.
 
+## 6.1. Verified integration of the accepted pair (2026-10-31)
+
+The integration coordinator performed preflight from clean worktrees on `anfisa-trainer`, verified GitHub main/dev-main/stage refs against exact initial T01/C01 and accepted T02/C02 commits, and checked `git merge-base --is-ancestor` for both repositories (Go: one additional commit; C: two). **Only the two dev-main refs were moved**; no force, reset, squash, rebase or new integration commit.
+
+- Go: `git -C /home/gptlab/dev/techo5-v3-dev-main merge --ff-only 78a01f897b89dd462576e6e617fbc8216c4518dd` then `git -C /home/gptlab/dev/techo5-v3-dev-main push --porcelain origin HEAD:refs/heads/experimental/external-asp-v3-dev-main`. Actual remote FF: `62603a78..78a01f89`.
+- C: `git -C /home/gptlab/dev/frankenasp-v3-dev-main merge --ff-only 0f39216a5240306344af7c2457716f4eaa466f40` then `git -C /home/gptlab/dev/frankenasp-v3-dev-main push --porcelain origin HEAD:refs/heads/experimental/v3-dev-main`. Actual remote FF: `e986ae1..0f39216`.
+- Post-push `git ls-remote origin` verified Go dev-main **`78a01f897b89dd462576e6e617fbc8216c4518dd`**, C dev-main **`0f39216a5240306344af7c2457716f4eaa466f40`**, unchanged protected main **T01/C01**, and unchanged published Stage02 refs **T02/C02**. All code stage/dev-main and docs worktrees were clean.
+- **Result: Integration COMPLETE.** The input pair for Stage03 is T02/C02; Stage03 implementation is separately scoped and is not part of Stage02.
+
 ## 7. Forward handoff and acceptance
 
 - CODE is locally committed and offline-tested; **both original candidate commit SHAs are published as remote Stage02 refs and verified**.
-- **Delegated technical acceptance ACCEPTED**, **integration PENDING**. Stage03 **must not start** until both published Stage02 candidate refs are explicitly integrated via a separately authorized Git integration action into their respective dev-main branches and both resulting remote HEADs verified.
-- The documentation coordinator publishes this Stage02 report with the delegated technical acceptance decision and its evidence. The code executor did not change design-staging; actual dev-main integration remains PENDING.
+- **Delegated technical acceptance ACCEPTED; integration COMPLETE.** Both exact Stage02 candidate refs have now been fast-forward integrated into the respective dev-main refs and rechecked remotely. **Stage03 is unblocked** and must start only on the accepted T02/C02 pair under its own stage assignment.
+- The documentation/integration coordinator has now recorded the delegated technical acceptance and actual two-repository dev-main fast-forward. The Stage02 code executor did not write to the documentation branch.
 - No hardware/vendor/acoustic claims are made and no Echo operations are permitted by this work.
 
 ## 8. Documentation publication boundary
 
-The original draft at `/home/gptlab/dev/v3-stage02-handoff/02_HANDOFF.md` was retained as historical evidence of the initial publication blocker. This completed report is published by the coordinator to `docs/external-asp-v3/stages/02_HANDOFF.md` on `experimental/v3-design-staging`. Stage02 **execution PASS**, delegated technical acceptance **ACCEPTED**, integration **PENDING**. Any later owner acceptance or integration must be recorded separately with actual verified SHAs; no future publication commit is invented inside this file.
+The original draft at `/home/gptlab/dev/v3-stage02-handoff/02_HANDOFF.md` was retained as historical evidence of the initial publication blocker. This completed report is published by the coordinator to `docs/external-asp-v3/stages/02_HANDOFF.md` on `experimental/v3-design-staging`. Stage02 **execution PASS**, delegated technical acceptance **ACCEPTED**, integration **COMPLETE**. Any later owner acceptance or integration must be recorded separately with actual verified SHAs; no future publication commit is invented inside this file.
