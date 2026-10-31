@@ -46,7 +46,7 @@ Reference Go `cfg2_metadata.go` и C `cfg2.c` использовать лишь 
 
 | ID | Обязательная проверка |
 |---|---|
-| C01 | Независимые exact-byte fixtures с ручными/spec-derived expected offsets; Go writer и C decoder дают одинаковые значения, expected не вычисляется тем же production encoder |
+| C01 | Независимые exact-byte fixtures с ручными/spec-derived expected offsets; Go writer и C decoder дают одинаковые значения, expected не вычисляется тем же production encoder; отдельно закрепить и проверить точные bytes/длину минимального readiness contract, принятого совместно Go/C |
 | C02 | S16/S24_3LE/S32, signed24 low/high, channel order, stride, >2 buffers, interleaved/separate, REF absent |
 | C03 | Raw IDME/hardware bytes byte-exact across Go writer / C reader (including embedded zero, high-bit bytes, absent sources and explicit source tags); никаких derived Q30/masks/availability/confidence |
 | C04 | Invalid magic/version/size/count/channel coverage/role indices; buffer gaps/overlap, integer overflow, последний sample вне Length; truncated reads; превышение принятого проверенного descriptor bound |

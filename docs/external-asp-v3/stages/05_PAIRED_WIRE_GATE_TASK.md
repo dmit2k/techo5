@@ -32,7 +32,7 @@ V2 §§5–7, 11.5–11.6, 12–14, 16–17, 20.1–20.3, 20.6–20.9, 21–22; 
 | ID | Обязательное доказательство |
 |---|---|
 | W01 | Native integration binary использует production Go session и compiled C codec/runtime/bridge с test-only DSP binding; реальные OS pipes, shared fixture manifest, никакого Python/fake wire вместо C |
-| W02 | Descriptor→5-byte READY; поддерживаемый fixture проходит; валидный unsupported descriptor отклонён до READY; каждый input даёт ровно 640 bytes, first output содержит ожидаемый one-time padding |
+| W02 | Descriptor→однократное READY-подтверждение строго по принятому Stage02 Go/C fixture (проверить точные bytes и длину, не предполагать 5 ASCII bytes); поддерживаемый fixture проходит; валидный unsupported descriptor отклонён до READY; каждый input даёт ровно 640 bytes, first output содержит ожидаемый one-time padding |
 | W03 | Partial reads/writes и EINTR на C, EOF/short response/broken pipe/process exit; нулевой progress не вечный loop; один outstanding exchange без framing |
 | W04 | Общий 5s budget не перезапускается на каждом buffer/read/write; blocked write и blocked read отменяются; пауза между обменами >5s не закрывает helper |
 | W05 | Startup timeout до READY; после READY продолжить exchanges после >10s от старта — child жив; startup cancellation не убивает новую/готовую session |

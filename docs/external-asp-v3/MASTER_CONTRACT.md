@@ -6,7 +6,7 @@
 
 Читать [EXECUTION_BRANCH_STRATEGY.md](EXECUTION_BRANCH_STRATEGY.md), этот файл, конкретный TASK, указанные в TASK разделы [SPEC_V2_APPROVED.md](SPEC_V2_APPROVED.md) и принятый handoff. Полные исторические аудиты повторно читать не требуется.
 
-Приоритет: 58 решений с пятью финальными уточнениями → APPROVED V2; Git и clean implementation — по EXECUTION_BRANCH_STRATEGY. Старая финальная оценка AUDIT_V2_FINAL относится к предшествующей normalized спецификации; исправленный контракт ожидает отдельного подтверждения владельца аудированных байтов. Ожидаемый blob V2: `eb678cacfbcc44927c65e402a9fa821fc0b56e9d`.
+Приоритет: 58 решений с пятью финальными уточнениями → исправленная SPEC V2 для V3 restart (новая редакция ожидает отдельного подтверждения владельца); Git и clean implementation — по EXECUTION_BRANCH_STRATEGY. Исторический AUDIT_V2_FINAL относится к прежней normalized спецификации и не утверждает raw-IDME поправку. Фактический Git blob текущей SPEC_V2_APPROVED.md: `c754947d81c77860f4221135b84956249f956935`.
 
 Снимок исходных ревизий и проверенных точек интеграции находится в [DECOMPOSITION_PLAN.md](DECOMPOSITION_PLAN.md). Нельзя использовать документационное дерево или старый эксперимент как production baseline.
 
@@ -39,7 +39,7 @@ Descriptor v1 один на External-сессию:
 
 FD3 закрепляет executable, FD4 — assets directory. Они **не PCM pipes**. PCM: stdin/stdout дочернего процесса; C сохраняет выделенный wire FD и направляет обычный runtime stdout в stderr до DSP initialization.
 
-Одна последовательность: descriptor → ровно пять bytes READY → полный input → ровно 640 output bytes. Output любого helper: mono S16LE, 16 kHz, 320 samples, 20 ms. Один outstanding exchange. Никаких per-frame headers, counters, origin, checksum, status или NotReady.
+Одна последовательность по смыслу: descriptor → однократное подтверждение успешной инициализации (READY) → полный input → ровно 640 output bytes. Конкретные bytes, длину и минимальное wire-представление READY совместно определяет Go/C исполнитель Stage02 и закрепляет независимыми fixtures; пять ASCII bytes не являются заранее установленным требованием. Output любого helper: mono S16LE, 16 kHz, 320 samples, 20 ms. Один outstanding exchange. Никаких дополнительных handshakes, per-frame headers, counters, origin, checksum, status или NotReady.
 
 Один общий **5 s** deadline на полный write/read exchange, включая все input buffers и partial syscalls. Это не idle timeout между блоками и не целевая latency.
 
