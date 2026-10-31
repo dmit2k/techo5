@@ -734,17 +734,29 @@ func TestBorrowedInputSizeAndOldOutput(t *testing.T) {
 	runtime.GC()
 	root, _, env := fixture(t, compiledMock(t))
 	defer root.Close()
+	for _, malformed := range [][][]byte{
+		{make([]byte, 30720)},
+		{make([]byte, 30720), make([]byte, 7679)},
+	} {
+		s, e := startFixture(t, context.Background(), root, supported(), env)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if _, e = s.Exchange(context.Background(), malformed); e == nil {
+			t.Fatal("malformed input accepted")
+		}
+		select {
+		case <-s.stopped:
+		default:
+			t.Fatal("invalid PCM input did not terminate session")
+		}
+		_ = s.Close()
+	}
 	s, e := startFixture(t, context.Background(), root, supported(), env)
 	if e != nil {
 		t.Fatal(e)
 	}
 	defer s.Close()
-	if _, e = s.Exchange(context.Background(), [][]byte{make([]byte, 30720)}); e == nil {
-		t.Fatal("bad buffer count accepted")
-	}
-	if _, e = s.Exchange(context.Background(), [][]byte{make([]byte, 30720), make([]byte, 7679)}); e == nil {
-		t.Fatal("truncated input accepted")
-	}
 	o, e := s.Exchange(context.Background(), pcm())
 	if e != nil {
 		t.Fatal(e)

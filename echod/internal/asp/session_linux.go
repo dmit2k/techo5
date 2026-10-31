@@ -311,9 +311,19 @@ func writeFull(w io.Writer, b []byte) error {
 // mono S16LE frame. Input is never retained past the call; the returned output
 // never aliases future exchanges. One 5s deadline spans ALL writes and the read.
 // Cancellation is terminal for the session, including when blocked on an OS pipe.
-func (s *Session) Exchange(ctx context.Context, buffers [][]byte) ([]byte, error) {
-	if s == nil || ctx == nil {
-		return nil, errors.New("invalid session/exchange context")
+func (s *Session) Exchange(ctx context.Context, buffers [][]byte) (_ []byte, retErr error) {
+	if s == nil {
+		return nil, errors.New("nil session")
+	}
+	// Every failed exchange is terminal, including caller-side contract errors
+	// and cancellation while waiting for the only outstanding PCM operation.
+	defer func() {
+		if retErr != nil {
+			s.stop()
+		}
+	}()
+	if ctx == nil {
+		return nil, errors.New("nil exchange context")
 	}
 	ex, cancel := context.WithTimeout(ctx, exchangeLimit)
 	defer cancel()
