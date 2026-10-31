@@ -1,6 +1,8 @@
 package mic
 
 import (
+	"fmt"
+
 	"github.com/HuskerMinion/techo5/echod/internal/asp"
 	"github.com/HuskerMinion/techo5/echod/internal/lib/alsa"
 )
@@ -77,9 +79,47 @@ type captureReadWithNative interface {
 	ReadWithNative([]byte, func() bool, func(NativeBlock)) (int, bool, error)
 }
 
-// readCaptured accepts ONE SoftwareCut decision. No second privacy read occurs.
-// Plain ALSA already supplies native interleaved bytes; no tap/copy is needed.
-// Panel's socket capture is stock-only and is not misrepresented as hardware REF.
+// plainNative describes only the capture roles established by the stock device layout.
+// A physical buffer with just the declared microphones has no REF. The complete
+// known stock layout also includes its original L/R hardware loopback. Unknown
+// extra channels are NOT silently labeled REF; nor is an unknown ALSA format
+// silently advertised as S24_3LE.
+func plainNative(pcm []byte, cfg alsa.Config) (NativeBlock, error) {
+	var format uint8
+	var width int
+	switch cfg.Format {
+	case alsa.FormatS16_LE:
+		format, width = asp.FormatS16, 2
+	case alsa.FormatS24_3LE:
+		format, width = asp.FormatS24_3, 3
+	case alsa.FormatS32_LE:
+		format, width = asp.FormatS32, 4
+	default:
+		return NativeBlock{}, fmt.Errorf("mic: unsupported native ALSA format %d", cfg.Format)
+	}
+	if cfg.Bits != width*8 || cfg.Rate <= 0 || cfg.Channels <= 0 {
+		return NativeBlock{}, fmt.Errorf("mic: invalid physical capture configuration: %+v", cfg)
+	}
+	refs := 0
+	switch {
+	case cfg.Channels == Mics:
+		// A MIC-only physical input; do not invent a playback reference.
+	case cfg.Channels == Channels && RefFirst == Mics && Channels == Mics+Refs:
+		refs = Refs // known original stock hardware loopback slots
+	default:
+		return NativeBlock{}, fmt.Errorf("mic: unknown capture channel roles: got %d channels, known MIC=%d stock=%d", cfg.Channels, Mics, Channels)
+	}
+	stride := cfg.Channels * width
+	if len(pcm) == 0 || len(pcm)%stride != 0 {
+		return NativeBlock{}, fmt.Errorf("mic: incomplete native capture frame: bytes=%d stride=%d", len(pcm), stride)
+	}
+	return nativeInterleaved(pcm, uint32(cfg.Rate), format, uint8(cfg.Bits), 0, Mics, refs), nil
+}
+
+// readCaptured samples the SoftwareCut policy exactly once after capture. Plain
+// ALSA returns the original interleaved bytes directly, with no input copies.
+// Without a native callback, stock and Panel keep their original Read contract;
+// on mute all returned stock bytes are cleared without inventing any geometry.
 func readCaptured(pcm capture, raw []byte, policy func() bool, visit func(NativeBlock)) (int, bool, error) {
 	if paired, ok := pcm.(captureReadWithNative); ok {
 		return paired.ReadWithNative(raw, policy, visit)
@@ -88,30 +128,31 @@ func readCaptured(pcm capture, raw []byte, policy func() bool, visit func(Native
 	if err != nil {
 		return n, false, err
 	}
-	// Decision is made AFTER the hardware returns, never before a blocking Read.
 	cut := policy()
-	if cut || visit != nil {
-		if device, ok := pcm.(interface{ Config() alsa.Config }); ok && n > 0 {
-			cfg := device.Config()
-			format := asp.FormatS24_3
-			switch cfg.Format {
-			case alsa.FormatS16_LE:
-				format = asp.FormatS16
-			case alsa.FormatS32_LE:
-				format = asp.FormatS32
-			}
-			mics := min(Mics, cfg.Channels)
-			nb := nativeInterleaved(raw[:n], uint32(cfg.Rate), format, uint8(cfg.Bits), 0, mics, cfg.Channels-mics)
-			if cut {
-				zeroNative(nb)
-			}
-			if visit != nil {
-				visit(nb)
-			}
-		} else if cut {
+	if visit == nil {
+		if cut {
 			clear(raw[:n])
 		}
+		return n, cut, nil
 	}
+	device, ok := pcm.(interface{ Config() alsa.Config })
+	if !ok { // Panel stock socket capture: never claim native hardware REF.
+		if cut {
+			clear(raw[:n])
+		}
+		return n, cut, fmt.Errorf("mic: native capture is unavailable on this stock-only backend")
+	}
+	block, err := plainNative(raw[:n], device.Config())
+	if err != nil {
+		if cut {
+			clear(raw[:n])
+		} // fail closed even for unsupported geometry
+		return n, cut, err
+	}
+	if cut {
+		zeroNative(block)
+	}
+	visit(block) // borrowed only until next capture Read
 	return n, cut, nil
 }
 
