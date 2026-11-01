@@ -51,7 +51,7 @@ func build() *Microphone {
 		}},
 		aspActive: &esphome.TextSensor{Base: esphome.Base{
 			ObjectID: "microphone_asp_active", Name: "Microphone ASP active",
-			Icon: "mdi:microphone",
+			Icon: "mdi:microphone", Category: esphome.CategoryDiagnostic,
 		}},
 		mixing: &esphome.Select{
 			Base: esphome.Base{

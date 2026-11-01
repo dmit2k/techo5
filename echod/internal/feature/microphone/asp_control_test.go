@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	esphome "github.com/ygelfand/go-esphome-device"
+
 	"github.com/HuskerMinion/techo5/echod/internal/config"
 	"github.com/HuskerMinion/techo5/echod/internal/hardware/mic"
 )
@@ -40,4 +42,18 @@ func TestL09SelectedPersistenceAndAlwaysAvailableHA(t *testing.T) {
 		t.Fatal("restore did not select External")
 	}
 	mic.Get().SetASP(config.ASPBuiltin)
+}
+
+// The actual ASP backend is a diagnostic reading, alongside Room level and
+// Room floor, while the requested ASP backend remains a configuration select.
+func TestASPActiveIsDiagnostic(t *testing.T) {
+	m := build()
+	if m.aspActive.ObjectID != "microphone_asp_active" ||
+		m.aspActive.Name != "Microphone ASP active" ||
+		m.aspActive.Category != esphome.CategoryDiagnostic {
+		t.Fatalf("actual ASP backend has wrong entity metadata: id=%q name=%q category=%v", m.aspActive.ObjectID, m.aspActive.Name, m.aspActive.Category)
+	}
+	if m.aspSelected.Category != esphome.CategoryConfig {
+		t.Fatalf("requested ASP backend has wrong category: %v", m.aspSelected.Category)
+	}
 }
