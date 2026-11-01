@@ -40,15 +40,14 @@ func (p *pinnedLaunch) close() {
 	}
 }
 
-// openPinned traverses already-open directory FDs. root is owned by its caller;
-// the returned executable and assets are pinned until Start succeeds or fails.
+// openPinned traverses path components using pinned directory FDs and
+// O_NOFOLLOW. The /data and /data/techo5-linux ancestors are traversal-only:
+// their ownership and permissions vary by device and are not a trust boundary.
+// The root-owned, mode 0700 private directories and pinned executable are verified.
 // The root/UID arguments are private, enabling trusted-root offline tests only.
 func openPinned(root *os.File, owner uint32) (_ *pinnedLaunch, err error) {
 	if root == nil {
 		return nil, errors.New("nil secure authority root")
-	}
-	if err := verifyPinned(root, owner, -1); err != nil {
-		return nil, fmt.Errorf("authority root: %w", err)
 	}
 	current := root
 	var held, assets, executable *os.File
@@ -71,9 +70,11 @@ func openPinned(root *os.File, owner uint32) (_ *pinnedLaunch, err error) {
 			return nil, fmt.Errorf("open %s: %w", name, e)
 		}
 		dir := os.NewFile(uintptr(fd), name)
-		if e = verifyPinned(dir, owner, i); e != nil {
-			_ = dir.Close()
-			return nil, fmt.Errorf("verify %s: %w", name, e)
+		if i >= 2 {
+			if e = verifyPinned(dir, owner, i); e != nil {
+				_ = dir.Close()
+				return nil, fmt.Errorf("verify %s: %w", name, e)
+			}
 		}
 		if held != nil {
 			_ = held.Close()
@@ -108,17 +109,12 @@ func verifyPinned(f *os.File, owner uint32, position int) error {
 		return fmt.Errorf("owner UID %d, expected %d", st.Uid, owner)
 	}
 	mode, perm := st.Mode&syscall.S_IFMT, st.Mode&07777
-	if position < 4 {
+	if position == 2 || position == 3 {
 		if mode != syscall.S_IFDIR {
 			return errors.New("not a directory")
 		}
-		switch {
-		case position == -1 && (perm&0022 != 0 || perm&07000 != 0):
-			return fmt.Errorf("unsafe authority root %#o", perm)
-		case position >= 2 && perm != 0700:
+		if perm != 0700 {
 			return fmt.Errorf("private directory mode %#o", perm)
-		case position >= 0 && position < 2 && ((perm&0022 != 0 && perm != 0777) || (perm&07000 != 0)):
-			return fmt.Errorf("unsafe ancestor mode %#o", perm)
 		}
 		return nil
 	}

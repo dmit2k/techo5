@@ -250,6 +250,54 @@ func TestPairedPartialAndEINTR(t *testing.T) {
 	}
 }
 
+// Ancestry above external-asp is traversed securely, but not trusted:
+// Spot may have /data owned by a device user and mode 0771, while other
+// platforms expose a root-owned, mode 0777 /data.
+func TestSecureParentDirectoriesAreTraversalOnly(t *testing.T) {
+	root, assets, _ := fixture(t, compiledMock(t))
+	defer root.Close()
+	base := filepath.Dir(filepath.Dir(filepath.Dir(assets)))
+	for _, dir := range []struct {
+		path string
+		mode os.FileMode
+	}{
+		{base, 0777},
+		{filepath.Join(base, "data"), 0771},
+		{filepath.Join(base, "data/techo5-linux"), 0777},
+	} {
+		if err := os.Chmod(dir.path, dir.mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	owner := uint32(os.Getuid())
+	p, err := openPinned(root, owner)
+	if err != nil {
+		t.Fatalf("rejected traversal-only parent directories: %v", err)
+	}
+	p.close()
+	if err := os.Chmod(assets, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if p, err := openPinned(root, owner); err == nil {
+		p.close()
+		t.Fatal("unsafe external-asp directory accepted")
+	}
+	if err := os.Chmod(assets, 0700); err != nil {
+		t.Fatal(err)
+	}
+	data := filepath.Join(base, "data")
+	if err := os.Rename(data, data+"-real"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(data+"-real", data); err != nil {
+		t.Fatal(err)
+	}
+	if p, err := openPinned(root, owner); err == nil {
+		p.close()
+		t.Fatal("symlinked ancestor accepted")
+	}
+}
+
 func TestSecurePinnedPathsAndReplacement(t *testing.T) {
 	executable := compiledMock(t)
 	root, assets, _ := fixture(t, executable)
