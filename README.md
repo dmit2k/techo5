@@ -77,8 +77,23 @@ How it compares with EchoLocal, EchoMuse, echo-dot-assist, Kiosk Satellite and V
 
 ## What's new
 
-The bigger changes of September and October 2026. Every release lists the rest.
+The bigger changes of September to November 2026. Every release lists the rest.
 
+- ⏸️ **A longer pause before the device stops listening** (v1.6.20). **End of speech pause** sets how long
+  a pause ends what you say, from 0.6 to 2 seconds, for anyone who stops to think mid-sentence
+  ([#374](https://github.com/HuskerMinion/techo5/pull/374)). Clearing Music Assistant's queue now clears
+  Now Playing at once ([#150](https://github.com/HuskerMinion/techo5/issues/150)), and a Tessera "go to page"
+  tile opens its page ([#376](https://github.com/HuskerMinion/techo5/issues/376)).
+- 👏 **A stricter clap, and "Alexa, stop" over a ring** (v1.6.19). **Clap sensitivity** adds a Strict
+  choice for a room where a desk passes for a double clap, and the clap event carries what it measured
+  ([#373](https://github.com/HuskerMinion/techo5/issues/373)). A wake word nearly heard over a ringing
+  timer pauses the ring for the second try ([#372](https://github.com/HuskerMinion/techo5/issues/372)),
+  and smaller **Calendar chips** fit a long list of calendars ([#371](https://github.com/HuskerMinion/techo5/pull/371)).
+- 🌍 **Galician, and a Monday week** (v1.6.18). **Screen language** gains Galician, with its own voice
+  words and dates ([#368](https://github.com/HuskerMinion/techo5/pull/368)), and Dutch for the labels
+  and buttons ([#365](https://github.com/HuskerMinion/techo5/pull/365)). A **Week starts Monday** calendar
+  switch, off by default ([#369](https://github.com/HuskerMinion/techo5/issues/369)), and a wake word
+  threshold of its own for while the speaker plays ([#367](https://github.com/HuskerMinion/techo5/pull/367)).
 - 🔠 **Text size and a dashboard layout** (v1.6.17). A **Text size** setting draws every word on the
   screen from 70% to 125% ([#363](https://github.com/HuskerMinion/techo5/pull/363)), and **Brightness**
   steps down to 5% for a dark room ([#362](https://github.com/HuskerMinion/techo5/pull/362)). Drawn

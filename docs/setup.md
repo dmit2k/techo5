@@ -393,6 +393,15 @@ captured login to the same page for a few minutes, and could see the pictures an
   same network can play to the device while one is on, as with any AirPlay or Spotify speaker, and
   Spotify Connect keeps the login a phone hands it until it is turned off.
 
+  If Spotify Connect shows up in the Spotify app and connects but skips every track, and the log has
+  `error audio key 0 1`, Spotify is refusing librespot (the open-source player behind it) the key to
+  play the track. It happens on some Premium accounts with librespot anywhere, not only on TECHO5, and
+  there is no fix on the device side yet ([#366](https://github.com/HuskerMinion/techo5/issues/366)).
+  A way around it: Music Assistant's Spotify Connect plugin with Spotify's own Soloist engine, playing
+  to the device as a Sendspin player. Choose the Music Assistant device in the Spotify app, and set the
+  plugin's **Spotify App volume behavior** to **Synchronize Spotify App volume** for the phone's volume
+  slider to work.
+
   Every image from v1.6.8 and dot-v1.0.35 carries the AirPlay 2 receiver, so an iPhone can group the
   device with other AirPlay 2 speakers (a HomePod, a Sonos) and play to all of them at once. Where it
   can't run (it won't start, or the kernel can't take the firewall's AirPlay 2 rules, which the
@@ -705,7 +714,8 @@ like "kitchen screen" under its **Voice assistants** settings in Home Assistant.
 - **Now playing** (the full page, or a strip over the clock). Once the music is
   paused or stopped for 30 seconds, the full page goes by itself: to the strip when the setting uses
   one, otherwise back to the clock, or to the dashboard when **Dashboard when idle** is on (the Spot
-  has no strip, so its clock face). The track is still held
+  has no strip, so its clock face). A strip left by the page going by itself goes too once the music
+  has been paused for 10 minutes. The track is still held
   for half an hour, so play picks it up again and the page comes back. A page you bring back while it
   is paused, with the clock's word for the music or a tap on the strip's song, stays another 30 seconds.
 - **Theme** (Show): a preset, or **Custom colors** of your own. On the screen, tap a color for each part.
@@ -730,9 +740,9 @@ like "kitchen screen" under its **Voice assistants** settings in Home Assistant.
 - **Video** (Show and Spot): videos full screen from Home Assistant's `play_video` action and, with **DLNA
   video** on, from DLNA apps. Off on a new device. On the setup page's Screen & Photos tab. See
   [Video](video.md).
-- **Screen language** (Settings → General): the language of the screen. German, French, Italian,
-  Japanese and Turkish translate the whole screen, settings included; Spanish translates part of it.
-  Dutch, Portuguese and Russian write the clock's day and date, the forecast's days, the weather's
+- **Screen language** (Settings → General): the language of the screen. German, French, Galician,
+  Italian, Japanese and Turkish translate the whole screen, settings included; Spanish translates part
+  of it, and Dutch its labels and buttons. Dutch, Portuguese and Russian write the clock's day and date, the forecast's days, the weather's
   words and the alarm after the date; the rest stays in English, as with *Match all* or *English*.
   Untranslated messages fall back to English ([how far each language is](translating.md)). It also
   picks which words the screen listens for. It
@@ -793,6 +803,9 @@ Assistant.
   starts on for the Show 8 and bigger, off for the Show 5.
 - **Week starts Monday**: the month's rows and the week's days start on Monday. Off by default, so
   the week starts on Sunday.
+- **Calendar chips**: *Normal* (the default) or *Small*: with Small, the calendars' names over the
+  month stay at the header line's smaller size on rows of their own too, so many calendars take less
+  of the month.
 - **Next up on the clock**: the next event at the foot of the clock, with its countdown, when the
   glance strip has nothing else to show. A tap opens its day.
 - **Weather in the calendar**: the forecast on the days.
@@ -888,6 +901,15 @@ device's fonts folder over SSH ([Set the SSH authorized keys](actions.md#set-the
   claps. It does not listen while the device plays music or a sound of its own, rings, or is in a
   request or a call. Only the event leaves the device: one microphone is read on it, as the wake
   word already reads them.
+  - **Clap sensitivity** (Home Assistant, Normal by default): **Strict** for a room where a phone
+    set down or two knocks on a hard desk pass for a double clap. It wants louder claps, brighter
+    ones and two that match more closely, so clap a little harder.
+  - The event also carries what the two claps measured, for an automation to leave out what isn't
+    a clap in your room: `first_db` and `second_db` (how far each rose over the room, in dB),
+    `first_brightness` and `second_brightness` (Normal wants 0.5 or more, Strict 0.8) and
+    `apart_ms`. Watch a few real claps and a few false ones in Developer tools, Events, listening
+    to `esphome.techo5_gesture`, then add a condition with a number between the two, such as
+    `{{ trigger.event.data.first_brightness | float(0) >= 0.9 }}`.
 - **Hold on the clock** (Show, off by default; the **Hold on the clock** switch in Home Assistant):
   a finger held on the clock for half a second sends the same event with `gesture: hold`. Only on
   the clock itself, with nothing else on the screen (not over the screensaver, a card or the night
@@ -934,7 +956,7 @@ Under Settings → **Sound**, or on the device's Assist satellite in Home Assist
   ([Watching the wake word scores](#watching-the-wake-word-scores)). Called Wake word sensitivity
   before v1.2.8.
 - **Wake word threshold (playing)** (0.5 to 0.99): the wake word's separate cutoff while the speaker
-  plays and echo cancellation is active. Until you change it, the device keeps the old behavior:
+  plays and echo cancellation is active, a ringing timer or alarm included. Until you change it, the device keeps the old behavior:
   0.10 below the normal threshold, but no lower than 0.50. Once set, it is independent of the
   normal threshold. The screen sets the first wake word; Home Assistant has one for each assistant.
 - **Wake word on Home Assistant** and **Confirm wake with Home Assistant** (both off by default):
@@ -951,6 +973,17 @@ Under Settings → **Sound**, or on the device's Assist satellite in Home Assist
   replies. An automation can show another for the step a request is in, without changing these, with
   [`voice_effect`](actions.md#show-an-effect-on-the-ring-during-a-request).
 - **Quiet hours** and **Do not disturb**.
+
+**End of speech pause** (0.6 to 2 seconds, 0.6 by default; the device's microphone settings in Home
+Assistant, beside **End of speech on the device**) is how long you have to stay quiet before the
+device takes you as finished. If a pause to think cuts your request off, raise it a few tenths at a
+time. A longer pause means a television or other voices in the room, when one of their words falls
+into it, keep a turn going longer. With Home Assistant, it applies after a wake word with **End of
+speech on the device** on; Home Assistant decides for a follow-up. Home Assistant also ends a turn
+itself, after 0.7 seconds of quiet by default, so for a longer pause here set the device's **Finished
+speaking detection** to **Relaxed**, 1.25 seconds. In a quiet room nothing longer than that has an
+effect with Home Assistant. With realtime voice and voice without Home Assistant it applies to every
+turn.
 
 On the setup page (Sound & Voice) or in Home Assistant, **Night volume** turns the device down to that
 level as quiet hours start, if it is louder, and back to where it was as they end. Turned up or down
