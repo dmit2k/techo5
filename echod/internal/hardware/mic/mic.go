@@ -410,6 +410,7 @@ func (s *Source) Run(ctx context.Context) error {
 				continue
 			}
 			if errors.Is(err, alsa.ErrOverrun) {
+				aspTimingRecord("capture_overrun", 0, err)
 				if overruns++; overruns == 1 || overruns%100 == 0 {
 					slog.Warn("capture overrun", "times", overruns)
 				}

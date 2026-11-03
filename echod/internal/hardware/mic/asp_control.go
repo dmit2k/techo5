@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"time"
 
 	"github.com/HuskerMinion/techo5/echod/internal/asp"
 	"github.com/HuskerMinion/techo5/echod/internal/config"
@@ -64,6 +65,7 @@ func (s *Source) activeASPLocked(v config.ASPMode) {
 		return
 	}
 	s.aspActive = v
+	aspTimingRecord("active_"+string(v), 0, nil)
 	if s.aspActiveChanged != nil {
 		s.aspActiveChanged(v)
 	}
@@ -120,6 +122,7 @@ func (s *Source) failASPLocked(a *aspAttempt, err error) {
 	s.aspLaunchWanted = false
 	s.activeASPLocked(config.ASPBuiltin)
 	s.endASPLocked(a)
+	aspTimingRecord("fallback", 0, err)
 	slog.Warn("external ASP fallback", "reason", err)
 }
 
@@ -153,7 +156,10 @@ func (s *Source) captureNative(block NativeBlock) *aspResponse {
 		go func() {
 			defer s.aspJobs.Done()
 			slog.Info("external ASP launch")
+			aspTimingRecord("launch_begin", 0, nil)
+			launchAt := time.Now()
 			p, err := opener(ctx, d)
+			aspTimingRecord("ready_result", time.Since(launchAt), err)
 			if err != nil {
 				s.failASP(a, fmt.Errorf("launch/READY: %w", err))
 				return
@@ -175,6 +181,7 @@ func (s *Source) captureNative(block NativeBlock) *aspResponse {
 	// Never send PCM under the descriptor pinned at an earlier READY.
 	if a != nil && (!slices.Equal(a.geometry.Buffers, block.Geometry.Buffers) ||
 		!slices.Equal(a.geometry.Channels, block.Geometry.Channels)) {
+		aspTimingRecord("geometry_changed", 0, fmt.Errorf("expected_buffers=%v captured_buffers=%v expected_channels=%v captured_channels=%v", a.geometry.Buffers, block.Geometry.Buffers, a.geometry.Channels, block.Geometry.Channels))
 		s.failASPLocked(a, errors.New("native PCM geometry changed"))
 		s.mu.Unlock()
 		return nil
@@ -184,9 +191,16 @@ func (s *Source) captureNative(block NativeBlock) *aspResponse {
 		return nil
 	}
 	p := a.process
+	for i, sample := range block.Buffers {
+		if i < len(a.geometry.Buffers) && len(sample) != int(a.geometry.Buffers[i].Length) {
+			aspTimingRecord("buffer_mismatch", 0, fmt.Errorf("buffer=%d bytes=%d expected=%d", i, len(sample), a.geometry.Buffers[i].Length))
+		}
+	}
 	s.mu.Unlock()
 
+	started := time.Now()
 	pcm, err := p.Exchange(a.ctx, block.Buffers)
+	aspTimingRecord("exchange", time.Since(started), err)
 	if err != nil {
 		s.failASP(a, fmt.Errorf("PCM exchange: %w", err))
 		return nil
@@ -249,6 +263,7 @@ func (s *Source) failNative(err error) {
 			s.endASPLocked(a)
 		}
 		s.activeASPLocked(config.ASPBuiltin)
+		aspTimingRecord("native_fallback", 0, err)
 		slog.Warn("external ASP fallback", "reason", err)
 	}
 	s.mu.Unlock()
