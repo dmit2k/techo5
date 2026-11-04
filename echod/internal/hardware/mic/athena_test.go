@@ -174,6 +174,21 @@ func TestAthenaRingsFitTheDriver(t *testing.T) {
 	}
 }
 
+// Mainline has its own ALSA DMA allocation, but Amazon's fixed 48 KiB block must keep its old ring.
+func TestAthenaKernelRingPeriods(t *testing.T) {
+	if got := periodsOr(athenaAmazonKernel.micPeriods, athenaMicPeriods); got != 3 {
+		t.Errorf("Amazon MIC periods = %d, want 3", got)
+	}
+	if got := periodsOr(athenaMainlineKernel.micPeriods, athenaMicPeriods); got != 4 {
+		t.Errorf("mainline MIC periods = %d, want 4", got)
+	}
+	for name, kernel := range map[string]athenaKernel{"Amazon": athenaAmazonKernel, "mainline": athenaMainlineKernel} {
+		if got := periodsOr(kernel.refPeriods, athenaRefPeriods); got != 4 {
+			t.Errorf("%s REF periods = %d, want 4", name, got)
+		}
+	}
+}
+
 // The PMIC path is Fire OS's builtin_Mic_SingleMic (audio_device_tas5805m.xml) after its mic type,
 // and every name has to fit a control id.
 func TestAthenaPmicPath(t *testing.T) {

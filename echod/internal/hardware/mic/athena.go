@@ -240,6 +240,7 @@ var athenaMainlineKernel = athenaKernel{
 	controls:    athenaMainlineControls,
 	gainControl: "Analog CH%d Mic Gain Volume",
 	softRef:     true,
+	micPeriods:  4, // Mainline AFE allocates DMA per stream; Amazon retains its 3-period limit.
 	// The microphones at 96 kHz, with the reference and without it: without it the software
 	// reference is used, as before the card had one.
 	micRates: []int{athenaMicRate},
